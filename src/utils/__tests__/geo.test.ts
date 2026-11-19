@@ -30,6 +30,24 @@ describe("orthographic projection", () => {
     expect(p.visible).toBe(true);
   });
 
+  it("is not mirrored: east is right and north is up", () => {
+    const rotation = { lambda: 90 - 20, phi: 0 }; // centered on 0°N, 20°E
+    expect(project(30, 0, rotation).x).toBeGreaterThan(0); // 10° east -> right
+    expect(project(10, 0, rotation).x).toBeLessThan(0); // 10° west -> left
+    expect(project(20, 10, rotation).y).toBeLessThan(0); // 10° north -> up
+  });
+
+  it("puts Madagascar to the right of Africa's interior when viewing Africa", () => {
+    const rotation = { lambda: 90 - 25, phi: 0 };
+    expect(project(46.9, -18.8, rotation).x).toBeGreaterThan(project(25, -18.8, rotation).x);
+  });
+
+  it("matches drag directions: increasing yaw moves the surface right, increasing pitch moves it down", () => {
+    const at = (lambda: number, phi: number) => project(20, 0, { lambda, phi });
+    expect(at(75, 0).x).toBeGreaterThan(at(70, 0).x);
+    expect(at(70, 5).y).toBeGreaterThan(at(70, 0).y);
+  });
+
   it("unproject inverts project on the visible hemisphere", () => {
     const rotation = { lambda: 137, phi: -23 };
     for (let i = 0; i < 200; i++) {

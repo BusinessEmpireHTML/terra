@@ -76,7 +76,7 @@ function projectClosed(xyz: number[], start: number, length: number, t: number[]
     const z1 = x * sinL + z * cosL;
     const y2 = y * cosP - z1 * sinP;
     const z2 = y * sinP + z1 * cosP;
-    let px = x1;
+    let px = -x1; // screen x points east; see project() in utils/geo.ts
     let py = -y2;
     if (z2 > HORIZON) {
       anyVisible = true;
@@ -107,7 +107,7 @@ function addOpenLine(builder: SkPathBuilder, xyz: number[], start: number, lengt
     const y2 = y * cosP - z1 * sinP;
     const z2 = y * sinP + z1 * cosP;
     if (z2 > HORIZON) {
-      run.push({ x: cx + x1 * R, y: cy - y2 * R });
+      run.push({ x: cx - x1 * R, y: cy - y2 * R });
     } else {
       if (run.length > 1) builder.addPoly(run, false);
       run = [];
@@ -196,7 +196,7 @@ function drawGlobe(canvas: SkCanvas, lambdaDeg: number, phiDeg: number, zoom: nu
     const y2 = y * cosP - z1 * sinP;
     const z2 = y * sinP + z1 * cosP;
     if (z2 <= HORIZON) continue;
-    const mx = cx + x1 * R;
+    const mx = cx - x1 * R;
     const my = cy - y2 * R;
     const halo = s.markerHalo[m];
     if (halo !== 0) {
@@ -340,10 +340,11 @@ export default function GlobeCanvas({
     minDistance: 3,
     onUpdate: (e) => {
       "worklet";
-      // Slow the spin when zoomed in, so a drag keeps tracking the finger.
+      // The surface follows the finger (drag right → the globe turns right,
+      // drag down → it tips down), slowed when zoomed in so it keeps tracking.
       const k = DRAG_DEGREES_PER_PX / zoom.value;
       lambda.value += e.changeX * k;
-      phi.value = Math.max(-80, Math.min(80, phi.value - e.changeY * k));
+      phi.value = Math.max(-80, Math.min(80, phi.value + e.changeY * k));
     },
   });
   const pinch = usePinchGesture({

@@ -53,9 +53,14 @@ export interface Projected {
 
 const HORIZON_EPSILON = -0.03; // lets border lines reach the limb without popping
 
+/**
+ * Screen axes: +x is east (right), +y is south (down). The rotated frame's x
+ * runs the other way, hence the sign flip; without it the globe renders as a
+ * mirror image (east on the left).
+ */
 export function project(lon: number, lat: number, rotation: Rotation): Projected {
   const p = applyRotation(toUnitSphere(lon, lat), rotation);
-  return { x: p.x, y: -p.y, visible: p.z > HORIZON_EPSILON };
+  return { x: -p.x, y: -p.y, visible: p.z > HORIZON_EPSILON };
 }
 
 /**
@@ -68,7 +73,7 @@ export function unproject(x: number, y: number, rotation: Rotation): [number, nu
   const λ = rotation.lambda * DEG2RAD;
   const φ = rotation.phi * DEG2RAD;
 
-  const x1 = x;
+  const x1 = -x; // see project(): screen x is mirrored relative to the rotated frame
   const y2 = -y;
   const z2 = Math.sqrt(1 - r2); // front hemisphere
 
