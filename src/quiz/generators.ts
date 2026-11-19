@@ -1,6 +1,6 @@
 import { COUNTRIES } from "../data/countries";
 import { COUNTRY_CONTENT } from "../data/countryContent";
-import { shuffle, pickRandom } from "../utils/random";
+import { shuffle, pickRandom, type Rng } from "../utils/random";
 import { normalizeName } from "../utils/text";
 import type { Continent, Country } from "../types/country";
 import { QUIZ_CATEGORIES, type Question, type QuestionChoice, type QuizCategory } from "./types";
@@ -135,9 +135,10 @@ function pickDistractorLabels(
   toLabel: (c: Country) => string,
   exclude: Set<string>,
   region: Continent,
+  rng: Rng,
   count = 3
 ): string[] {
-  const shuffled = shuffle(candidates);
+  const shuffled = shuffle(candidates, rng);
   const near = shuffled.filter((c) => c.region === region);
   const far = shuffled.filter((c) => c.region !== region);
   const ordered = [...near.slice(0, SAME_REGION_DISTRACTORS), ...far, ...near.slice(SAME_REGION_DISTRACTORS)];
@@ -154,12 +155,12 @@ function pickDistractorLabels(
   return labels;
 }
 
-function choicesFrom(correctLabel: string, distractorLabels: string[]): QuestionChoice[] {
+function choicesFrom(correctLabel: string, distractorLabels: string[], rng: Rng): QuestionChoice[] {
   const choices: QuestionChoice[] = [
     { label: correctLabel, correct: true },
     ...distractorLabels.map((label) => ({ label, correct: false })),
   ];
-  return shuffle(choices);
+  return shuffle(choices, rng);
 }
 
 function nonce(): string {
@@ -176,25 +177,25 @@ function listJoin(items: string[]): string {
 
 // ---- Generators --------------------------------------------------------------
 
-function generateFlag(country: Country): Question {
+function generateFlag(country: Country, rng: Rng): Question {
   const lookalikes = flagLookalikes.get(country.id);
   const candidates = COUNTRIES.filter((c) => c.id !== country.id && !lookalikes?.has(c.id));
-  const distractors = pickDistractorLabels(candidates, countryName, new Set([country.name.common]), country.region);
+  const distractors = pickDistractorLabels(candidates, countryName, new Set([country.name.common]), country.region, rng);
   return {
     id: `flag:${country.id}:${nonce()}`,
     category: "flag",
     countryId: country.id,
     promptLabel: "Which country does this flag belong to?",
     promptVisual: "flag",
-    choices: choicesFrom(country.name.common, distractors),
+    choices: choicesFrom(country.name.common, distractors, rng),
     explanation: `That's the flag of ${country.name.common}.`,
   };
 }
 
-function generateCapital(country: Country): Question {
+function generateCapital(country: Country, rng: Rng): Question {
   const [capital, ...otherCapitals] = country.capital!;
   const candidates = ELIGIBLE_POOLS.capital.filter((c) => c.id !== country.id);
-  const distractors = pickDistractorLabels(candidates, (c) => c.capital![0], new Set(country.capital), country.region);
+  const distractors = pickDistractorLabels(candidates, (c) => c.capital![0], new Set(country.capital), country.region, rng);
   const explanation = otherCapitals.length
     ? `${capital} is the capital of ${country.name.common} (it also counts ${listJoin(otherCapitals)} as ${otherCapitals.length > 1 ? "capitals" : "a capital"}).`
     : `${capital} is the capital of ${country.name.common}.`;
@@ -203,27 +204,27 @@ function generateCapital(country: Country): Question {
     category: "capital",
     countryId: country.id,
     promptLabel: `What is the capital of ${country.name.common}?`,
-    choices: choicesFrom(capital, distractors),
+    choices: choicesFrom(capital, distractors, rng),
     explanation,
   };
 }
 
-function generateShape(country: Country): Question {
+function generateShape(country: Country, rng: Rng): Question {
   const candidates = ELIGIBLE_POOLS.shape.filter((c) => c.id !== country.id);
-  const distractors = pickDistractorLabels(candidates, countryName, new Set([country.name.common]), country.region);
+  const distractors = pickDistractorLabels(candidates, countryName, new Set([country.name.common]), country.region, rng);
   return {
     id: `shape:${country.id}:${nonce()}`,
     category: "shape",
     countryId: country.id,
     promptLabel: "Which country has this outline?",
     promptVisual: "shape",
-    choices: choicesFrom(country.name.common, distractors),
+    choices: choicesFrom(country.name.common, distractors, rng),
     explanation: `That's the outline of ${country.name.common}.`,
   };
 }
 
 /** "Find it on the globe": no choices to pick from — the player taps the globe. */
-function generateLocate(country: Country): Question {
+function generateLocate(country: Country, rng: Rng): Question {
   const neighbors = knownNeighbors(country).map(countryName);
   // "Australia is in Australia and New Zealand" reads oddly, so use the continent when the subregion repeats the name.
   const area = country.subregion && !country.subregion.includes(country.name.common) ? country.subregion : country.region;
@@ -242,12 +243,12 @@ function generateLocate(country: Country): Question {
   };
 }
 
-function generateCurrency(country: Country): Question {
+function generateCurrency(country: Country, rng: Rng): Question {
   const [primary, ...others] = country.currencies!.map((c) => c.name);
   // Exclude *every* currency the country uses, so e.g. Panama's question
   // can't offer the US dollar as a "wrong" answer.
   const candidates = ELIGIBLE_POOLS.currency.filter((c) => c.id !== country.id);
-  const distractors = pickDistractorLabels(candidates, (c) => c.currencies![0].name, new Set([primary, ...others]), country.region);
+  const distractors = pickDistractorLabels(candidates, (c) => c.currencies![0].name, new Set([primary, ...others]), country.region, rng);
   const explanation = others.length
     ? `${country.name.common} uses the ${primary}, alongside the ${listJoin(others)}.`
     : `${country.name.common} uses the ${primary}.`;
@@ -256,58 +257,58 @@ function generateCurrency(country: Country): Question {
     category: "currency",
     countryId: country.id,
     promptLabel: `What currency does ${country.name.common} use?`,
-    choices: choicesFrom(primary, distractors),
+    choices: choicesFrom(primary, distractors, rng),
     explanation,
   };
 }
 
-function generateNeighbor(country: Country): Question {
+function generateNeighbor(country: Country, rng: Rng): Question {
   const neighbors = knownNeighbors(country);
-  const neighbor = pickRandom(neighbors, 1)[0];
+  const neighbor = pickRandom(neighbors, 1, rng)[0];
   const neighborIds = new Set(neighbors.map((n) => n.id));
   const candidates = COUNTRIES.filter((c) => c.id !== country.id && !neighborIds.has(c.id));
-  const distractors = pickDistractorLabels(candidates, countryName, new Set([neighbor.name.common]), country.region);
+  const distractors = pickDistractorLabels(candidates, countryName, new Set([neighbor.name.common]), country.region, rng);
   return {
     id: `neighbor:${country.id}:${nonce()}`,
     category: "neighbor",
     countryId: country.id,
     promptLabel: `Which of these shares a land border with ${country.name.common}?`,
-    choices: choicesFrom(neighbor.name.common, distractors),
+    choices: choicesFrom(neighbor.name.common, distractors, rng),
     explanation: `${neighbor.name.common} borders ${country.name.common}.`,
   };
 }
 
-function generateLandmark(country: Country): Question {
-  const landmark = pickRandom(COUNTRY_CONTENT[country.id]!.landmarks!, 1)[0];
+function generateLandmark(country: Country, rng: Rng): Question {
+  const landmark = pickRandom(COUNTRY_CONTENT[country.id]!.landmarks!, 1, rng)[0];
   const owners = landmarkOwners.get(normalizeName(landmark.name)) ?? new Set([country.id]);
   const candidates = COUNTRIES.filter((c) => !owners.has(c.id));
-  const distractors = pickDistractorLabels(candidates, countryName, new Set([country.name.common]), country.region);
+  const distractors = pickDistractorLabels(candidates, countryName, new Set([country.name.common]), country.region, rng);
   return {
     id: `landmark:${country.id}:${nonce()}`,
     category: "landmark",
     countryId: country.id,
     promptLabel: `Which country is home to ${landmark.name}?`,
-    choices: choicesFrom(country.name.common, distractors),
+    choices: choicesFrom(country.name.common, distractors, rng),
     explanation: `${landmark.name} is in ${country.name.common}. ${landmark.note}`,
   };
 }
 
-function generateFood(country: Country): Question {
-  const dish = pickRandom(quizzableDishes(country.id), 1)[0];
+function generateFood(country: Country, rng: Rng): Question {
+  const dish = pickRandom(quizzableDishes(country.id), 1, rng)[0];
   const owners = dishOwners.get(normalizeName(dish.name)) ?? new Set([country.id]);
   const candidates = COUNTRIES.filter((c) => !owners.has(c.id));
-  const distractors = pickDistractorLabels(candidates, countryName, new Set([country.name.common]), country.region);
+  const distractors = pickDistractorLabels(candidates, countryName, new Set([country.name.common]), country.region, rng);
   return {
     id: `food:${country.id}:${nonce()}`,
     category: "food",
     countryId: country.id,
     promptLabel: `${dish.name} is a dish from which country?`,
-    choices: choicesFrom(country.name.common, distractors),
+    choices: choicesFrom(country.name.common, distractors, rng),
     explanation: `${dish.name} is from ${country.name.common}. ${dish.note}`,
   };
 }
 
-const GENERATORS: Record<QuizCategory, (c: Country) => Question> = {
+const GENERATORS: Record<QuizCategory, (c: Country, rng: Rng) => Question> = {
   flag: generateFlag,
   capital: generateCapital,
   shape: generateShape,
@@ -318,9 +319,10 @@ const GENERATORS: Record<QuizCategory, (c: Country) => Question> = {
   food: generateFood,
 };
 
-export function generateQuestion(category: QuizCategory, countryId: string): Question {
+/** Builds one question. Pass a seeded `rng` to make the distractors and choice order reproducible. */
+export function generateQuestion(category: QuizCategory, countryId: string, rng: Rng = Math.random): Question {
   const country = byId.get(countryId);
   if (!country) throw new Error(`Unknown country ${countryId}`);
   if (!isEligible(category, countryId)) throw new Error(`${countryId} has no data for the ${category} quiz`);
-  return GENERATORS[category](country);
+  return GENERATORS[category](country, rng);
 }

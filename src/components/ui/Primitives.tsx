@@ -60,7 +60,10 @@ interface AnimatedPressableProps {
   children?: React.ReactNode;
   onPress?: (event: GestureResponderEvent) => void;
   haptic?: boolean;
+  /** Visual style of the animated content (background, padding, border…). */
   style?: StyleProp<ViewStyle>;
+  /** Layout of the touchable itself (margins, width, alignSelf) — `style` can't size the outer element. */
+  containerStyle?: StyleProp<ViewStyle>;
   disabled?: boolean;
   accessibilityLabel?: string;
   accessibilityHint?: string;
@@ -74,6 +77,7 @@ export function AnimatedPressable({
   onPress,
   haptic = true,
   style,
+  containerStyle,
   accessibilityRole = "button",
   ...rest
 }: AnimatedPressableProps) {
@@ -82,6 +86,7 @@ export function AnimatedPressable({
 
   return (
     <Pressable
+      style={containerStyle}
       accessibilityRole={accessibilityRole}
       onPressIn={() => {
         scale.value = withSpring(0.96, { damping: 14, stiffness: 300 });
@@ -114,7 +119,7 @@ export function PrimaryButton({
 }) {
   const { colors, type, space, radius } = useTheme();
   return (
-    <AnimatedPressable onPress={onPress} style={style} accessibilityLabel={label} accessibilityHint={accessibilityHint}>
+    <AnimatedPressable onPress={onPress} containerStyle={style} accessibilityLabel={label} accessibilityHint={accessibilityHint}>
       <View style={{ backgroundColor: colors.accent, borderRadius: radius.md, paddingVertical: space.md, alignItems: "center" }}>
         <Text style={[type.body, { color: colors.background, fontFamily: fontFamily.bodySemiBold }]}>{label}</Text>
       </View>

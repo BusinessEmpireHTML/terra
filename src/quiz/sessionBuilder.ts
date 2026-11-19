@@ -1,4 +1,5 @@
 import { ELIGIBLE_POOLS, generateQuestion } from "./generators";
+import { buildDailyQuiz } from "./daily";
 import { progressStore } from "../services/progressStore";
 import { shuffle } from "../utils/random";
 import { QUIZ_CATEGORIES, type ProgressRecord, type Question, type QuizCategory } from "./types";
@@ -6,7 +7,7 @@ import { QUIZ_CATEGORIES, type ProgressRecord, type Question, type QuizCategory 
 export type CategoryFilter = QuizCategory | "mixed";
 
 export const DEFAULT_SESSION_LENGTH = 10;
-export const DAILY_QUIZ_LENGTH = 5;
+export { DAILY_QUIZ_LENGTH } from "./daily";
 
 const ALL_CATEGORIES: QuizCategory[] = QUIZ_CATEGORIES.map((c) => c.key);
 
@@ -26,6 +27,8 @@ export interface SessionOptions {
   focusCountryId?: string;
   /** Restrict questions to these countries (e.g. an expedition's list). */
   countryIds?: string[];
+  /** Build that date's Daily Quiz (YYYY-MM-DD) instead — the same questions for every player. */
+  dailyDate?: string;
 }
 
 interface Pair {
@@ -87,7 +90,8 @@ export function selectPairs(ranked: Pair[], length: number): Pair[] {
 }
 
 export async function buildSession(filter: CategoryFilter, options: SessionOptions = {}): Promise<Question[]> {
-  const { length = DEFAULT_SESSION_LENGTH, focusCountryId, countryIds } = options;
+  const { length = DEFAULT_SESSION_LENGTH, focusCountryId, countryIds, dailyDate } = options;
+  if (dailyDate) return buildDailyQuiz(dailyDate);
   const allowed = focusCountryId ? new Set([focusCountryId]) : countryIds ? new Set(countryIds) : null;
 
   const candidates: Pair[] = [];

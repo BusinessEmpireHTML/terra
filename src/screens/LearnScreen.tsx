@@ -6,7 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { GradientBackground, AnimatedPressable } from "../components/ui/Primitives";
 import { useTheme } from "../theme/ThemeProvider";
 import { fontFamily } from "../theme/tokens";
-import { DAILY_QUIZ_LENGTH } from "../quiz/sessionBuilder";
+import { DAILY_QUIZ_LENGTH, dailyNumber } from "../quiz/daily";
 import { progressStore } from "../services/progressStore";
 import { dailyStore } from "../services/dailyStore";
 import { overallStats } from "../quiz/mastery";
@@ -105,7 +105,7 @@ export default function LearnScreen() {
               style={{ flex: 1 }}
               onPress={() => router.push("/quiz/mixed?daily=1")}
               accessibilityRole="button"
-              accessibilityLabel={`Daily quiz, ${DAILY_QUIZ_LENGTH} questions${daily?.dailyQuizDone ? ", done today" : ""}`}
+              accessibilityLabel={`Daily quiz, the same ${DAILY_QUIZ_LENGTH} questions for everyone today${daily?.dailyQuizDone ? ", done — see and share your result" : ""}`}
             >
               <View
                 style={{
@@ -122,9 +122,13 @@ export default function LearnScreen() {
                   size={22}
                   color={daily?.dailyQuizDone ? colors.accentSecondary : colors.accent}
                 />
-                <Text style={[type.bodySmall, { color: colors.textPrimary, marginTop: 6, textAlign: "center" }]}>Daily Quiz</Text>
+                <Text style={[type.bodySmall, { color: colors.textPrimary, marginTop: 6, textAlign: "center" }]}>
+                  Daily #{daily ? dailyNumber(daily.date) : ""}
+                </Text>
                 <Text style={[type.label, { color: colors.textMuted, marginTop: 2, fontSize: 9 }]}>
-                  {daily?.dailyQuizDone ? "DONE TODAY" : `${DAILY_QUIZ_LENGTH} QUESTIONS`}
+                  {daily?.dailyQuizAnswers
+                    ? `DONE · ${daily.dailyQuizAnswers.filter((a) => a.correct).length}/${daily.dailyQuizAnswers.length}`
+                    : `${DAILY_QUIZ_LENGTH} QUESTIONS`}
                 </Text>
               </View>
             </Pressable>

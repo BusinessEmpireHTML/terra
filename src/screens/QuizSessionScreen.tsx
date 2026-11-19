@@ -9,7 +9,10 @@ import { useTheme } from "../theme/ThemeProvider";
 import { useQuizSession } from "../quiz/useQuizSession";
 import { whenAnswersSaved } from "../quiz/answerRecorder";
 import { QUIZ_CATEGORIES } from "../quiz/types";
-import { DAILY_QUIZ_LENGTH, DEFAULT_SESSION_LENGTH, type CategoryFilter } from "../quiz/sessionBuilder";
+import { DEFAULT_SESSION_LENGTH, type CategoryFilter } from "../quiz/sessionBuilder";
+import { dailyNumber, type DailyAnswer } from "../quiz/daily";
+import { DailyResultCard } from "../components/quiz/DailyResultCard";
+import { localDateString } from "../gamification/streaks";
 import { dailyStore } from "../services/dailyStore";
 import { checkForNewAchievements } from "../gamification/checkAchievements";
 import { EXPEDITIONS_BY_ID } from "../gamification/expeditions";
@@ -31,14 +34,32 @@ export default function QuizSessionScreen({ filter, focusCountryId, expeditionId
   const expedition = expeditionId ? EXPEDITIONS_BY_ID.get(expeditionId) : undefined;
   const focusCountry = focusCountryId ? COUNTRIES.find((c) => c.id === focusCountryId) : undefined;
 
-  const { loading, error, currentQuestion, answered, index, total, correctCount, xpEarned, isComplete, submitAnswer, next, retry } =
+  // The Daily is pinned to the date the screen opened, so a game that runs past midnight stays one game.
+  const [dailyDate] = useState(() => localDateString());
+  const { loading, error, currentQuestion, answered, index, total, results, correctCount, xpEarned, isComplete, submitAnswer, next, retry } =
     useQuizSession(filter, {
-      length: isDailyChallenge ? DAILY_QUIZ_LENGTH : DEFAULT_SESSION_LENGTH,
+      length: DEFAULT_SESSION_LENGTH,
       focusCountryId,
       countryIds: expedition?.countryIds,
+      dailyDate: isDailyChallenge ? dailyDate : undefined,
     });
   const [newAchievements, setNewAchievements] = useState<Achievement[]>([]);
   const wrapUpStarted = useRef(false);
+  // Daily answers: undefined while checking storage, null if not yet played today.
+  const [dailyAnswers, setDailyAnswers] = useState<DailyAnswer[] | null | undefined>(isDailyChallenge ? undefined : null);
+  const [playedEarlier, setPlayedEarlier] = useState(false);
+
+  useEffect(() => {
+    if (!isDailyChallenge) return;
+    dailyStore
+      .getToday()
+      .then((d) => {
+        const earlier = d.date === dailyDate && d.dailyQuizAnswers?.length ? d.dailyQuizAnswers : null;
+        setDailyAnswers(earlier);
+        setPlayedEarlier(Boolean(earlier));
+      })
+      .catch(() => setDailyAnswers(null));
+  }, [isDailyChallenge, dailyDate]);
 
   const categoryMeta = filter !== "mixed" ? QUIZ_CATEGORIES.find((c) => c.key === filter) : null;
   const title = focusCountry
@@ -46,7 +67,7 @@ export default function QuizSessionScreen({ filter, focusCountryId, expeditionId
     : expedition
       ? expedition.title
       : isDailyChallenge
-        ? "Daily Quiz"
+        ? `Daily #${dailyNumber(dailyDate)}`
         : categoryMeta?.label ?? "Mixed review";
 
   useEffect(() => {
@@ -55,7 +76,11 @@ export default function QuizSessionScreen({ filter, focusCountryId, expeditionId
     let cancelled = false;
     (async () => {
       try {
-        if (isDailyChallenge) await dailyStore.markDailyQuizDone();
+        if (isDailyChallenge) {
+          const answers = results.map((r) => ({ category: r.question.category, correct: r.correct }));
+          await dailyStore.markDailyQuizDone(dailyDate, answers);
+          if (!cancelled) setDailyAnswers(answers);
+        }
         // Make sure the final answer has been written before evaluating
         // achievements, or one earned on the last question would be missed.
         await whenAnswersSaved();
@@ -68,7 +93,33 @@ export default function QuizSessionScreen({ filter, focusCountryId, expeditionId
     return () => {
       cancelled = true;
     };
-  }, [isComplete, isDailyChallenge]);
+    // `results` is complete once isComplete flips; reading it then is intentional.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isComplete, isDailyChallenge, dailyDate]);
+
+  // Already played today's Daily: show the result (and share) instead of replaying it.
+  if (isDailyChallenge && (dailyAnswers === undefined || playedEarlier)) {
+    return (
+      <GradientBackground>
+        <SafeAreaView style={{ flex: 1, paddingHorizontal: space.xl }}>
+          <View style={{ flexDirection: "row", paddingTop: space.sm }}>
+            <Pressable onPress={goBack} hitSlop={12} accessibilityRole="button" accessibilityLabel="Close">
+              <Ionicons name="close" size={26} color={colors.textPrimary} />
+            </Pressable>
+          </View>
+          {dailyAnswers && (
+            <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+              <Text style={[type.title, { color: colors.textPrimary, textAlign: "center", marginBottom: space.lg }]}>
+                You've played today's Daily
+              </Text>
+              <DailyResultCard date={dailyDate} answers={dailyAnswers} />
+              <PrimaryButton label="Done" onPress={goBack} style={{ marginTop: space.md, alignSelf: "stretch" }} />
+            </View>
+          )}
+        </SafeAreaView>
+      </GradientBackground>
+    );
+  }
 
   const percent = total ? Math.round((correctCount / total) * 100) : 0;
   const progress = total ? (index + (answered ? 1 : 0)) / total : 0;
@@ -138,19 +189,28 @@ export default function QuizSessionScreen({ filter, focusCountryId, expeditionId
           ))}
 
         {isComplete && (
-          <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: space.xl }}>
-            <Text style={{ fontSize: 56 }} accessible={false}>
-              {percent >= 80 ? "🏆" : percent >= 50 ? "🌍" : "🧭"}
-            </Text>
-            <Text
-              style={[type.hero, { color: colors.textPrimary, marginTop: space.md, fontSize: 32 }]}
-              accessibilityLabel={`${correctCount} out of ${total} correct`}
-            >
-              {correctCount} / {total}
-            </Text>
-            <Text style={[type.body, { color: colors.textMuted, marginTop: 4 }]}>
-              {percent}% correct{xpEarned > 0 ? ` · +${xpEarned} XP` : ""}
-            </Text>
+          <ScrollView contentContainerStyle={{ flexGrow: 1, alignItems: "center", justifyContent: "center", padding: space.xl }}>
+            {isDailyChallenge && dailyAnswers ? (
+              <>
+                <DailyResultCard date={dailyDate} answers={dailyAnswers} />
+                {xpEarned > 0 && <Text style={[type.body, { color: colors.textMuted, marginTop: 4 }]}>+{xpEarned} XP</Text>}
+              </>
+            ) : (
+              <>
+                <Text style={{ fontSize: 56 }} accessible={false}>
+                  {percent >= 80 ? "🏆" : percent >= 50 ? "🌍" : "🧭"}
+                </Text>
+                <Text
+                  style={[type.hero, { color: colors.textPrimary, marginTop: space.md, fontSize: 32 }]}
+                  accessibilityLabel={`${correctCount} out of ${total} correct`}
+                >
+                  {correctCount} / {total}
+                </Text>
+                <Text style={[type.body, { color: colors.textMuted, marginTop: 4 }]}>
+                  {percent}% correct{xpEarned > 0 ? ` · +${xpEarned} XP` : ""}
+                </Text>
+              </>
+            )}
             {newAchievements.length > 0 && (
               <View
                 style={{
@@ -174,7 +234,7 @@ export default function QuizSessionScreen({ filter, focusCountryId, expeditionId
               </View>
             )}
             <PrimaryButton label="Done" onPress={goBack} style={{ marginTop: space.xl, width: "100%" }} />
-          </View>
+          </ScrollView>
         )}
 
         {currentQuestion && answered && (

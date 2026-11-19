@@ -1,23 +1,23 @@
 import { kv } from "./kv";
-import { COUNTRIES } from "../data/countries";
 import { localDateString } from "../gamification/streaks";
+import { countryOfTheDay, type DailyAnswer } from "../quiz/daily";
 import type { DailyState } from "../gamification/types";
+
+export { countryOfTheDay };
 
 const KEY_PREFIX = "terra:daily:";
 
-/** Deterministic pick — the same country all day for every user, changing daily without needing a server. */
-export function countryOfTheDay(date = localDateString()): string {
-  let hash = 0;
-  for (let i = 0; i < date.length; i++) {
-    hash = (hash * 31 + date.charCodeAt(i)) >>> 0;
-  }
-  return COUNTRIES[hash % COUNTRIES.length].id;
-}
 
 export const dailyStore = {
   async getToday(): Promise<DailyState> {
     const date = localDateString();
-    const fresh: DailyState = { date, countryOfTheDayId: countryOfTheDay(date), dailyQuizDone: false, speedRoundBestScore: null };
+    const fresh: DailyState = {
+      date,
+      countryOfTheDayId: countryOfTheDay(date),
+      dailyQuizDone: false,
+      dailyQuizAnswers: null,
+      speedRoundBestScore: null,
+    };
     const raw = await kv.getItemAsync(KEY_PREFIX + date);
     if (!raw) return fresh;
     try {
@@ -31,9 +31,11 @@ export const dailyStore = {
     await kv.setItemAsync(KEY_PREFIX + state.date, JSON.stringify(state));
   },
 
-  async markDailyQuizDone(): Promise<void> {
+  /** Records today's Daily Quiz result. The first attempt is the one that counts (and gets shared). */
+  async markDailyQuizDone(date: string, answers: DailyAnswer[]): Promise<void> {
     const state = await this.getToday();
-    await this.save({ ...state, dailyQuizDone: true });
+    if (state.date !== date || state.dailyQuizDone) return;
+    await this.save({ ...state, dailyQuizDone: true, dailyQuizAnswers: answers });
   },
 
   async recordSpeedRoundScore(score: number): Promise<void> {
