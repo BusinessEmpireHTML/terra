@@ -1,6 +1,7 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useTheme } from "../../theme/ThemeProvider";
+import { fontFamily } from "../../theme/tokens";
 import type { Dish, HistoryEvent, Landmark } from "../../types/country";
 
 export function ParagraphBlock({ text }: { text: string }) {
@@ -108,7 +109,7 @@ export function DishGrid({ dishes }: { dishes: Dish[] }) {
             padding: space.md,
           }}
         >
-          <Text style={[type.body, { color: colors.textPrimary, fontFamily: "Manrope_700Bold" }]}>{d.name}</Text>
+          <Text style={[type.body, { color: colors.textPrimary, fontFamily: fontFamily.bodySemiBold }]}>{d.name}</Text>
           <Text style={[type.bodySmall, { color: colors.textMuted, marginTop: 2 }]}>{d.note}</Text>
         </View>
       ))}
@@ -134,7 +135,7 @@ export function LandmarkList({ landmarks }: { landmarks: Landmark[] }) {
         >
           <View style={{ width: 4, borderRadius: 2, backgroundColor: colors.accentSecondary, marginRight: space.sm }} />
           <View style={{ flex: 1 }}>
-            <Text style={[type.body, { color: colors.textPrimary, fontFamily: "Manrope_700Bold" }]}>{l.name}</Text>
+            <Text style={[type.body, { color: colors.textPrimary, fontFamily: fontFamily.bodySemiBold }]}>{l.name}</Text>
             <Text style={[type.bodySmall, { color: colors.textMuted, marginTop: 2 }]}>{l.note}</Text>
           </View>
         </View>

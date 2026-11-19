@@ -1,12 +1,18 @@
 import { COUNTRIES } from "../data/countries";
-import { COUNTRY_CONTENT } from "../data/countryContent";
-import { QUIZ_CATEGORIES, MASTERY_LEVELS, type CountryMastery, type ProgressRecord } from "./types";
+import { isEligible } from "./generators";
+import { QUIZ_CATEGORIES, MASTERY_LEVELS, type CountryMastery, type ProgressRecord, type QuizCategory } from "./types";
 import { MAX_BOX } from "./srs";
 
-/** How many quiz categories actually apply to this country (Landmark/Food only exist for the 121 with content). */
-export function availableCategoriesFor(countryId: string): number {
-  const hasContent = Boolean(COUNTRY_CONTENT[countryId]);
-  return QUIZ_CATEGORIES.filter((c) => !c.requiresContent || hasContent).length;
+/** Mastery score at or above which a country counts as "mastered" (Master tier). */
+export const MASTERED_THRESHOLD = 85;
+
+/**
+ * The quiz categories that actually apply to this country. Islands have no
+ * land neighbors and microstates have no outline at this map scale, so a
+ * fixed denominator of 7 would make 100% (Legend) unreachable for them.
+ */
+export function availableCategoriesFor(countryId: string): QuizCategory[] {
+  return QUIZ_CATEGORIES.map((c) => c.key).filter((key) => isEligible(key, countryId));
 }
 
 function levelFor(score: number): (typeof MASTERY_LEVELS)[number] {
@@ -24,9 +30,17 @@ function levelFor(score: number): (typeof MASTERY_LEVELS)[number] {
  * brief's "know every country's flag, capital, language..." framing.
  */
 export function computeMastery(countryId: string, records: ProgressRecord[]): CountryMastery {
-  const categoriesAvailable = availableCategoriesFor(countryId);
-  const countryRecords = records.filter((r) => r.countryId === countryId && (r.correctCount > 0 || r.incorrectCount > 0));
+  const available = new Set(availableCategoriesFor(countryId));
+  const countryRecords = records.filter(
+    (r) =>
+      r.countryId === countryId &&
+      // Ignore records for categories that no longer apply (e.g. a dish that
+      // was later marked too generic to quiz on), so coverage can't exceed 100%.
+      available.has(r.category) &&
+      (r.correctCount > 0 || r.incorrectCount > 0)
+  );
   const categoriesAttempted = countryRecords.length;
+  const categoriesAvailable = available.size;
 
   const avgBoxRatio =
     categoriesAttempted === 0 ? 0 : countryRecords.reduce((sum, r) => sum + r.box / MAX_BOX, 0) / categoriesAttempted;
@@ -63,7 +77,7 @@ export function overallStats(records: ProgressRecord[]) {
   const masteryByCountry = computeAllMastery(records);
   const scores = Array.from(masteryByCountry.values());
   const countriesStarted = scores.filter((m) => m.categoriesAttempted > 0).length;
-  const countriesMastered = scores.filter((m) => m.score >= 85).length;
+  const countriesMastered = scores.filter((m) => m.score >= MASTERED_THRESHOLD).length;
   const totalCorrect = records.reduce((s, r) => s + r.correctCount, 0);
   const totalIncorrect = records.reduce((s, r) => s + r.incorrectCount, 0);
   const totalAnswered = totalCorrect + totalIncorrect;

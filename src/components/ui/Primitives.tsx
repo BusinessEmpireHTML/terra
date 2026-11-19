@@ -1,10 +1,22 @@
 import React from "react";
-import { Pressable, StyleSheet, Text, View, type GestureResponderEvent, type StyleProp, type ViewProps, type ViewStyle } from "react-native";
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  type AccessibilityRole,
+  type AccessibilityState,
+  type GestureResponderEvent,
+  type StyleProp,
+  type ViewProps,
+  type ViewStyle,
+} from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
-import * as Haptics from "expo-haptics";
+import { tapFeedback } from "../../utils/haptics";
 import { useTheme } from "../../theme/ThemeProvider";
+import { fontFamily } from "../../theme/tokens";
 
 /** Full-bleed background gradient: ink navy in dark mode, warm vellum in light mode. */
 export function GradientBackground({ children }: { children: React.ReactNode }) {
@@ -50,6 +62,10 @@ interface AnimatedPressableProps {
   haptic?: boolean;
   style?: StyleProp<ViewStyle>;
   disabled?: boolean;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
+  accessibilityRole?: AccessibilityRole;
+  accessibilityState?: AccessibilityState;
 }
 
 /** A pressable that settles with a small spring instead of the default opacity fade. */
@@ -58,6 +74,7 @@ export function AnimatedPressable({
   onPress,
   haptic = true,
   style,
+  accessibilityRole = "button",
   ...rest
 }: AnimatedPressableProps) {
   const scale = useSharedValue(1);
@@ -65,6 +82,7 @@ export function AnimatedPressable({
 
   return (
     <Pressable
+      accessibilityRole={accessibilityRole}
       onPressIn={() => {
         scale.value = withSpring(0.96, { damping: 14, stiffness: 300 });
       }}
@@ -72,7 +90,7 @@ export function AnimatedPressable({
         scale.value = withSpring(1, { damping: 10, stiffness: 200 });
       }}
       onPress={(e) => {
-        if (haptic) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        if (haptic) tapFeedback();
         onPress?.(e);
       }}
       {...rest}
@@ -82,13 +100,35 @@ export function AnimatedPressable({
   );
 }
 
+/** Full-width filled call-to-action button. */
+export function PrimaryButton({
+  label,
+  onPress,
+  style,
+  accessibilityHint,
+}: {
+  label: string;
+  onPress: () => void;
+  style?: StyleProp<ViewStyle>;
+  accessibilityHint?: string;
+}) {
+  const { colors, type, space, radius } = useTheme();
+  return (
+    <AnimatedPressable onPress={onPress} style={style} accessibilityLabel={label} accessibilityHint={accessibilityHint}>
+      <View style={{ backgroundColor: colors.accent, borderRadius: radius.md, paddingVertical: space.md, alignItems: "center" }}>
+        <Text style={[type.body, { color: colors.background, fontFamily: fontFamily.bodySemiBold }]}>{label}</Text>
+      </View>
+    </AnimatedPressable>
+  );
+}
+
 /** Small mono-numeral label/value pair — reads like a field journal entry. */
 export function FactRow({ label, value }: { label: string; value: string }) {
   const { colors, type, space } = useTheme();
   return (
-    <View style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: space.xs }}>
-      <Text style={[type.label, { color: colors.textMuted, textTransform: "uppercase" }]}>{label}</Text>
-      <Text style={[type.data, { color: colors.textPrimary }]} numberOfLines={1}>
+    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", paddingVertical: space.xs }}>
+      <Text style={[type.label, { color: colors.textMuted, textTransform: "uppercase", marginRight: space.md }]}>{label}</Text>
+      <Text style={[type.data, { color: colors.textPrimary, flexShrink: 1, textAlign: "right" }]} numberOfLines={1}>
         {value}
       </Text>
     </View>
@@ -123,7 +163,7 @@ export function FactPill({ label, value }: { label: string; value: string }) {
 export function SectionHeader({ title }: { title: string }) {
   const { colors, type, space } = useTheme();
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", marginBottom: space.sm, marginTop: space.lg }}>
+    <View accessibilityRole="header" style={{ flexDirection: "row", alignItems: "center", marginBottom: space.sm, marginTop: space.lg }}>
       <View style={{ width: 18, height: StyleSheet.hairlineWidth * 2, backgroundColor: colors.accent, marginRight: space.sm }} />
       <Text style={[type.section, { color: colors.accent, textTransform: "uppercase" }]}>{title}</Text>
     </View>
@@ -145,7 +185,7 @@ export function ComingSoonCard({ title, note }: { title: string; note: string })
         opacity: 0.7,
       }}
     >
-      <Text style={[type.body, { fontFamily: "Manrope_700Bold", color: colors.textSecondary }]}>{title}</Text>
+      <Text style={[type.body, { fontFamily: fontFamily.bodySemiBold, color: colors.textSecondary }]}>{title}</Text>
       <Text style={[type.bodySmall, { color: colors.textMuted, marginTop: 2 }]}>{note}</Text>
     </View>
   );

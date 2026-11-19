@@ -1,97 +1,98 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { buildSession, type CategoryFilter } from "./sessionBuilder";
-import { applyAnswer, newProgressRecord } from "./srs";
-import { progressStore } from "../services/progressStore";
-import { activityStore, localDateString } from "../services/activityStore";
+import { buildSession, type CategoryFilter, type SessionOptions } from "./sessionBuilder";
+import { recordAnswer } from "./answerRecorder";
 import type { AnswerResult, Question } from "./types";
-
-const XP_CORRECT = 10;
-const XP_NEW_PAIR_BONUS = 5; // rewards breadth: the first time you ever try (country, category)
 
 interface SessionState {
   loading: boolean;
+  error: string | null;
   questions: Question[];
   index: number;
   results: AnswerResult[];
   answered: AnswerResult | null; // the just-submitted answer, shown before advancing
+  xpEarned: number;
 }
 
-export function useQuizSession(filter: CategoryFilter, length = 10, focusCountryId?: string) {
-  const [state, setState] = useState<SessionState>({ loading: true, questions: [], index: 0, results: [], answered: null });
-  const startedRef = useRef(false);
+const INITIAL: SessionState = { loading: true, error: null, questions: [], index: 0, results: [], answered: null, xpEarned: 0 };
+
+export function useQuizSession(filter: CategoryFilter, options: SessionOptions = {}) {
+  const [state, setState] = useState<SessionState>(INITIAL);
+  const stateRef = useRef(state);
+  stateRef.current = state;
+  // Guards against a double tap answering the same question twice before
+  // React has re-rendered with `answered` set.
+  const answeredIndexRef = useRef(-1);
+  const mountedRef = useRef(true);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    if (startedRef.current) return;
-    startedRef.current = true;
-    buildSession(filter, length, focusCountryId).then((questions) => {
-      setState((s) => ({ ...s, loading: false, questions }));
-    });
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    answeredIndexRef.current = -1;
+    setState(INITIAL);
+    buildSession(filter, options)
+      .then((questions) => {
+        if (!cancelled) setState((s) => ({ ...s, loading: false, questions }));
+      })
+      .catch((err) => {
+        if (__DEV__) console.warn("Failed to build quiz session:", err);
+        if (!cancelled) setState((s) => ({ ...s, loading: false, error: "Couldn't load your progress to build a session." }));
+      });
+    return () => {
+      cancelled = true;
+    };
+    // Options are read once per attempt; route params don't change while the screen is mounted.
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attempt]);
+
+  const submitAnswer = useCallback((chosenLabel: string) => {
+    const s = stateRef.current;
+    const question = s.questions[s.index];
+    if (!question || s.answered || answeredIndexRef.current === s.index) return;
+    answeredIndexRef.current = s.index;
+
+    const correct = question.choices.find((c) => c.label === chosenLabel)?.correct ?? false;
+    const result: AnswerResult = { question, chosenLabel, correct };
+    setState((prev) => ({ ...prev, answered: result, results: [...prev.results, result] }));
+
+    recordAnswer(question, correct)
+      .then((xp) => {
+        if (mountedRef.current && xp > 0) setState((prev) => ({ ...prev, xpEarned: prev.xpEarned + xp }));
+      })
+      .catch(() => {
+        // Already logged by the recorder; the session itself carries on.
+      });
   }, []);
-
-  const submitAnswer = useCallback(async (chosenLabel: string) => {
-    setState((s) => {
-      const question = s.questions[s.index];
-      if (!question || s.answered) return s;
-      const correct = question.choices.find((c) => c.label === chosenLabel)?.correct ?? false;
-      const result: AnswerResult = { question, chosenLabel, correct };
-      return { ...s, answered: result, results: [...s.results, result] };
-    });
-  }, []);
-
-  // Persist SRS progress and log the activity event the moment an answer is recorded.
-  useEffect(() => {
-    if (!state.answered) return;
-    const { question, correct } = state.answered;
-    (async () => {
-      const [existing, priorAttempts] = await Promise.all([
-        progressStore.get(question.countryId, question.category),
-        activityStore.countFor(question.countryId, question.category),
-      ]);
-      const base = existing ?? newProgressRecord(question.countryId, question.category);
-      await progressStore.upsert(applyAnswer(base, correct));
-
-      if (correct) {
-        const xp = XP_CORRECT + (priorAttempts === 0 ? XP_NEW_PAIR_BONUS : 0);
-        await activityStore.log({
-          date: localDateString(),
-          timestamp: new Date().toISOString(),
-          countryId: question.countryId,
-          category: question.category,
-          correct: true,
-          xpEarned: xp,
-        });
-      } else {
-        await activityStore.log({
-          date: localDateString(),
-          timestamp: new Date().toISOString(),
-          countryId: question.countryId,
-          category: question.category,
-          correct: false,
-          xpEarned: 0,
-        });
-      }
-    })();
-  }, [state.answered]);
 
   const next = useCallback(() => {
     setState((s) => ({ ...s, index: s.index + 1, answered: null }));
   }, []);
 
-  const isComplete = !state.loading && state.index >= state.questions.length;
-  const currentQuestion = state.loading || isComplete ? null : state.questions[state.index];
+  const retry = useCallback(() => setAttempt((a) => a + 1), []);
+
+  const isComplete = !state.loading && !state.error && state.questions.length > 0 && state.index >= state.questions.length;
+  const currentQuestion = state.loading || isComplete ? null : state.questions[state.index] ?? null;
   const correctCount = state.results.filter((r) => r.correct).length;
 
   return {
     loading: state.loading,
+    error: state.error,
     currentQuestion,
     answered: state.answered,
     index: state.index,
     total: state.questions.length,
     results: state.results,
     correctCount,
+    xpEarned: state.xpEarned,
     isComplete,
     submitAnswer,
     next,
+    retry,
   };
 }

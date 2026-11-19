@@ -4,7 +4,7 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, { FadeOut } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Globe, type GlobeLayer } from "../components/globe/Globe";
+import { DENSITY_BREAKS, Globe, type GlobeLayer } from "../components/globe/Globe";
 import { CountrySearchSheet } from "../components/search/CountrySearchSheet";
 import { GradientBackground } from "../components/ui/Primitives";
 import { useTheme } from "../theme/ThemeProvider";
@@ -12,6 +12,7 @@ import { useAppStore } from "../store/useAppStore";
 import { COUNTRIES } from "../data/countries";
 import { progressStore } from "../services/progressStore";
 import { computeAllMastery } from "../quiz/mastery";
+import type { Country } from "../types/country";
 
 const LAYERS: { key: GlobeLayer; label: string }[] = [
   { key: "political", label: "Political" },
@@ -19,8 +20,9 @@ const LAYERS: { key: GlobeLayer; label: string }[] = [
   { key: "mastery", label: "Mastery" },
 ];
 
-const DENSITY_LEGEND = ["<10/km²", "<50", "<150", "<400", "400+"];
+const DENSITY_LEGEND = [`<${DENSITY_BREAKS[0]}/km²`, ...DENSITY_BREAKS.slice(1).map((b) => `<${b}`), `${DENSITY_BREAKS[DENSITY_BREAKS.length - 1]}+`];
 const MASTERY_LEGEND = ["Started", "", "", "", "Mastered"];
+const COUNTRY_BY_ID = new Map(COUNTRIES.map((c) => [c.id, c]));
 
 export default function HomeScreen() {
   const { colors, type, space } = useTheme();
@@ -46,37 +48,47 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
-      progressStore.getAll().then((records) => {
-        if (cancelled) return;
-        const byCountry = computeAllMastery(records);
-        const scores = new Map<string, number>();
-        byCountry.forEach((m, id) => scores.set(id, m.score));
-        setMasteryByCca3(scores);
-      });
+      progressStore
+        .getAll()
+        .then((records) => {
+          if (cancelled) return;
+          const byCountry = computeAllMastery(records);
+          const scores = new Map<string, number>();
+          byCountry.forEach((m, id) => scores.set(id, m.score));
+          setMasteryByCca3(scores);
+        })
+        .catch(() => {});
       return () => {
         cancelled = true;
       };
     }, [])
   );
 
-  const goToCountry = (cca3: string) => {
-    setSearchOpen(false);
-    router.push(`/country/${cca3}`);
-  };
+  const goToCountry = useCallback(
+    (cca3: string) => {
+      setSearchOpen(false);
+      router.push(`/country/${cca3}`);
+    },
+    [router]
+  );
 
-  const recentCountries = recents.map((id) => COUNTRIES.find((c) => c.id === id)).filter(Boolean);
+  const recentCountries = recents.map((id) => COUNTRY_BY_ID.get(id)).filter((c): c is Country => Boolean(c));
 
   return (
     <GradientBackground>
-      <SafeAreaView style={{ flex: 1 }}>
+      <SafeAreaView style={{ flex: 1 }} edges={["top", "left", "right"]}>
         <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: space.lg, paddingTop: space.sm }}>
           <View style={{ flex: 1 }}>
-            <Text style={[type.hero, { color: colors.textPrimary, fontSize: 30 }]}>Terra</Text>
+            <Text accessibilityRole="header" style={[type.hero, { color: colors.textPrimary, fontSize: 30 }]}>
+              Terra
+            </Text>
             <Text style={[type.subtitle, { color: colors.textMuted }]}>Explore the world, one country at a time</Text>
           </View>
           <Pressable
             onPress={() => setSearchOpen(true)}
             hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel="Search countries"
             style={{
               width: 44,
               height: 44,
@@ -92,13 +104,16 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
-        <View style={{ flexDirection: "row", justifyContent: "center", gap: space.sm, marginBottom: space.sm }}>
+        <View accessibilityRole="radiogroup" style={{ flexDirection: "row", justifyContent: "center", gap: space.sm, marginBottom: space.sm, marginTop: space.sm }}>
           {LAYERS.map((l) => {
             const active = layer === l.key;
             return (
               <Pressable
                 key={l.key}
                 onPress={() => setLayer(l.key)}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: active }}
+                accessibilityLabel={`${l.label} map layer`}
                 style={{
                   paddingVertical: 6,
                   paddingHorizontal: 14,
@@ -162,7 +177,7 @@ export default function HomeScreen() {
           <Globe size={globeSize} layer={layer} masteryByCca3={masteryByCca3} onSelectCountry={goToCountry} />
 
           {showHint && (
-            <Animated.View exiting={FadeOut.duration(400)} style={{ position: "absolute", bottom: -8, alignItems: "center" }}>
+            <Animated.View exiting={FadeOut.duration(400)} style={{ position: "absolute", bottom: space.sm, alignItems: "center" }}>
               <Text style={[type.bodySmall, { color: colors.textMuted }]}>
                 Drag to rotate · Pinch to zoom · Tap a country
               </Text>
@@ -176,8 +191,10 @@ export default function HomeScreen() {
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
               {recentCountries.slice(0, 6).map((c) => (
                 <Pressable
-                  key={c!.id}
-                  onPress={() => goToCountry(c!.id)}
+                  key={c.id}
+                  onPress={() => goToCountry(c.id)}
+                  accessibilityRole="button"
+                  accessibilityLabel={c.name.common}
                   style={{
                     flexDirection: "row",
                     alignItems: "center",
@@ -189,8 +206,8 @@ export default function HomeScreen() {
                     borderColor: colors.border,
                   }}
                 >
-                  <Text style={{ fontSize: 16, marginRight: 6 }}>{c!.flagEmoji}</Text>
-                  <Text style={[type.bodySmall, { color: colors.textPrimary }]}>{c!.name.common}</Text>
+                  <Text style={{ fontSize: 16, marginRight: 6 }}>{c.flagEmoji}</Text>
+                  <Text style={[type.bodySmall, { color: colors.textPrimary }]}>{c.name.common}</Text>
                 </Pressable>
               ))}
             </View>

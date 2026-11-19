@@ -1,11 +1,11 @@
-import { Storage } from "expo-sqlite/kv-store";
+import { kv } from "./kv";
 import { COUNTRIES } from "../data/countries";
-import { localDateString } from "./activityStore";
+import { localDateString } from "../gamification/streaks";
 import type { DailyState } from "../gamification/types";
 
 const KEY_PREFIX = "terra:daily:";
 
-/** Deterministic pick — same country all day for everyone on this device, changes daily without needing a server. */
+/** Deterministic pick — the same country all day for every user, changing daily without needing a server. */
 export function countryOfTheDay(date = localDateString()): string {
   let hash = 0;
   for (let i = 0; i < date.length; i++) {
@@ -17,13 +17,18 @@ export function countryOfTheDay(date = localDateString()): string {
 export const dailyStore = {
   async getToday(): Promise<DailyState> {
     const date = localDateString();
-    const raw = await Storage.getItemAsync(KEY_PREFIX + date);
-    if (raw) return JSON.parse(raw) as DailyState;
-    return { date, countryOfTheDayId: countryOfTheDay(date), dailyQuizDone: false, speedRoundBestScore: null };
+    const fresh: DailyState = { date, countryOfTheDayId: countryOfTheDay(date), dailyQuizDone: false, speedRoundBestScore: null };
+    const raw = await kv.getItemAsync(KEY_PREFIX + date);
+    if (!raw) return fresh;
+    try {
+      return { ...fresh, ...(JSON.parse(raw) as Partial<DailyState>) };
+    } catch {
+      return fresh; // corrupt entry: start the day over rather than crash the Learn tab
+    }
   },
 
   async save(state: DailyState): Promise<void> {
-    await Storage.setItemAsync(KEY_PREFIX + state.date, JSON.stringify(state));
+    await kv.setItemAsync(KEY_PREFIX + state.date, JSON.stringify(state));
   },
 
   async markDailyQuizDone(): Promise<void> {

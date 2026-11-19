@@ -34,3 +34,6 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+
+# data generator scratch output (older versions of scripts/prepare-data.mjs)
+scripts/out-*

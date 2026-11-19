@@ -58,28 +58,109 @@ export function project(lon: number, lat: number, rotation: Rotation): Projected
   return { x: p.x, y: -p.y, visible: p.z > HORIZON_EPSILON };
 }
 
-/** Build an SVG path 'd' string for a ring, projected + culled to the visible hemisphere. Returns null if the whole ring is on the far side. */
+/**
+ * Inverse of `project` for the visible hemisphere: unit-circle screen
+ * coordinates back to [lon, lat]. Returns null outside the globe's disk.
+ */
+export function unproject(x: number, y: number, rotation: Rotation): [number, number] | null {
+  const r2 = x * x + y * y;
+  if (r2 > 1) return null;
+  const λ = rotation.lambda * DEG2RAD;
+  const φ = rotation.phi * DEG2RAD;
+
+  const x1 = x;
+  const y2 = -y;
+  const z2 = Math.sqrt(1 - r2); // front hemisphere
+
+  // Undo the pitch, then the yaw (each is a plain 2D rotation).
+  const py = y2 * Math.cos(φ) + z2 * Math.sin(φ);
+  const z1 = -y2 * Math.sin(φ) + z2 * Math.cos(φ);
+  const px = x1 * Math.cos(λ) + z1 * Math.sin(λ);
+  const pz = -x1 * Math.sin(λ) + z1 * Math.cos(λ);
+
+  const lat = Math.asin(Math.max(-1, Math.min(1, py))) / DEG2RAD;
+  const lon = Math.atan2(pz, px) / DEG2RAD;
+  return [lon, lat];
+}
+
+/**
+ * Build an SVG path 'd' string for a ring, projected onto the visible
+ * hemisphere. Returns null if the whole ring is on the far side.
+ *
+ * - `closed` rings (country outlines): points behind the globe are pushed
+ *   out to the horizon along their own direction, so a country straddling
+ *   the edge is clipped cleanly at the limb instead of its hidden half being
+ *   drawn mirrored across the visible face.
+ * - Open lines (graticule): hidden stretches are skipped entirely and the
+ *   path is never closed, so meridians don't get a chord drawn across them.
+ */
 export function projectRingToPath(
   ring: Ring,
   rotation: Rotation,
   radius: number,
   cx: number,
-  cy: number
+  cy: number,
+  closed = true
 ): string | null {
   let anyVisible = false;
   let d = "";
+  let penDown = false;
 
   for (let i = 0; i < ring.length; i++) {
     const [lon, lat] = ring[i];
     const p = project(lon, lat, rotation);
-    if (p.visible) anyVisible = true;
-    const x = (cx + p.x * radius).toFixed(1);
-    const y = (cy + p.y * radius).toFixed(1);
-    d += i === 0 ? `M${x},${y}` : `L${x},${y}`;
+    let px = p.x;
+    let py = p.y;
+
+    if (p.visible) {
+      anyVisible = true;
+    } else if (closed) {
+      const r = Math.hypot(px, py);
+      if (r > 1e-9) {
+        px /= r;
+        py /= r;
+      }
+    } else {
+      penDown = false; // lift the pen; the next visible point starts a new segment
+      continue;
+    }
+
+    const x = (cx + px * radius).toFixed(1);
+    const y = (cy + py * radius).toFixed(1);
+    d += penDown ? `L${x},${y}` : `M${x},${y}`;
+    penDown = true;
   }
 
   if (!anyVisible) return null;
-  return d + "Z";
+  return closed ? d + "Z" : d;
+}
+
+/**
+ * Shifts western longitudes by +360° for rings that straddle the
+ * antimeridian (Russia's Chukotka, Fiji), so they become one contiguous shape
+ * instead of spanning the whole map. Rings that don't straddle it are
+ * returned unchanged.
+ */
+export function unwrapAntimeridian(rings: Ring[]): Ring[] {
+  const lons = rings.flat().map(([lon]) => lon);
+  if (lons.length === 0 || Math.max(...lons) - Math.min(...lons) <= 180) return rings;
+  return rings.map((ring) => ring.map(([lon, lat]) => [lon < 0 ? lon + 360 : lon, lat] as [number, number]));
+}
+
+/** Ray-casting point-in-polygon on a [lon, lat] ring (antimeridian-aware). */
+export function pointInRing(point: [number, number], ring: Ring): boolean {
+  const [lon0, lat] = point;
+  const [unwrapped] = unwrapAntimeridian([ring]);
+  const lons = unwrapped === ring ? [lon0] : [lon0, lon0 + 360];
+  return lons.some((lon) => {
+    let inside = false;
+    for (let i = 0, j = unwrapped.length - 1; i < unwrapped.length; j = i++) {
+      const [xi, yi] = unwrapped[i];
+      const [xj, yj] = unwrapped[j];
+      if (yi > lat !== yj > lat && lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  });
 }
 
 export function angularDistanceDeg(a: [number, number], b: [number, number]): number {
@@ -116,23 +197,35 @@ export function flagFromCca2(cca2: string): string {
     .replace(/./g, (char) => String.fromCodePoint(127397 + char.charCodeAt(0)));
 }
 
+/** 1_234_567 -> "1.2M", 9_492 -> "9.5K", 0.44 -> "0.44". Keeps one decimal only where it adds information. */
 export function formatCompactNumber(n?: number): string {
-  if (n == null) return "—";
-  if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1)}B`;
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
-  return String(n);
+  if (n == null || !Number.isFinite(n)) return "—";
+  const fmt = (v: number, suffix: string) => `${v >= 100 ? Math.round(v) : Number(v.toFixed(1))}${suffix}`;
+  if (n >= 999_950_000) return fmt(n / 1_000_000_000, "B");
+  if (n >= 999_950) return fmt(n / 1_000_000, "M");
+  if (n >= 1_000) return fmt(n / 1_000, "K");
+  return n >= 100 ? String(Math.round(n)) : String(Number(n.toFixed(2)));
+}
+
+/** Decimal degrees -> "48.9°N, 2.4°E" for display. */
+export function formatLatLng(lat: number, lng: number): string {
+  const ns = lat >= 0 ? "N" : "S";
+  const ew = lng >= 0 ? "E" : "W";
+  return `${Math.abs(lat).toFixed(1)}°${ns}, ${Math.abs(lng).toFixed(1)}°${ew}`;
 }
 
 /**
  * Flattens a country's border rings into SVG path(s) that fill a
  * `size`×`size` box with even padding, preserving aspect ratio — used for
  * the Shapes quiz, where the country is shown on its own rather than
- * rotating on the globe. Plain equirectangular (lon→x, lat→y); at the
- * scale of a single country's silhouette the distortion is negligible.
+ * rotating on the globe. Longitude is scaled by cos(mid-latitude) so
+ * high-latitude countries keep the proportions people know from maps
+ * (plain lon→x would make Norway or Canada look twice as wide as they are),
+ * and antimeridian-straddling countries are unwrapped first.
  */
 export function flattenShapeToPaths(outerRings: [number, number][][], size: number, padding = 16): string[] {
-  const allPoints = outerRings.flat();
+  const rings = unwrapAntimeridian(outerRings);
+  const allPoints = rings.flat();
   if (allPoints.length === 0) return [];
 
   let minLon = Infinity,
@@ -146,18 +239,19 @@ export function flattenShapeToPaths(outerRings: [number, number][][], size: numb
     if (lat > maxLat) maxLat = lat;
   }
 
-  const spanLon = Math.max(maxLon - minLon, 0.01);
-  const spanLat = Math.max(maxLat - minLat, 0.01);
+  const xScale = Math.max(Math.cos(((minLat + maxLat) / 2) * DEG2RAD), 0.2);
+  const spanX = Math.max((maxLon - minLon) * xScale, 0.01);
+  const spanY = Math.max(maxLat - minLat, 0.01);
   const drawable = size - padding * 2;
-  const scale = Math.min(drawable / spanLon, drawable / spanLat);
+  const scale = Math.min(drawable / spanX, drawable / spanY);
 
-  const offsetX = (size - spanLon * scale) / 2;
-  const offsetY = (size - spanLat * scale) / 2;
+  const offsetX = (size - spanX * scale) / 2;
+  const offsetY = (size - spanY * scale) / 2;
 
-  return outerRings.map((ring) => {
+  return rings.map((ring) => {
     let d = "";
     ring.forEach(([lon, lat], i) => {
-      const x = offsetX + (lon - minLon) * scale;
+      const x = offsetX + (lon - minLon) * xScale * scale;
       const y = offsetY + (maxLat - lat) * scale; // flip: SVG y grows downward
       d += i === 0 ? `M${x.toFixed(1)},${y.toFixed(1)}` : `L${x.toFixed(1)},${y.toFixed(1)}`;
     });

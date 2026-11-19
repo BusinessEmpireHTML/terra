@@ -21,7 +21,7 @@ export function CountrySilhouette({ countryId, size = 180 }: { countryId: string
   }, [countryId, size]);
 
   return (
-    <Svg width={size} height={size}>
+    <Svg width={size} height={size} accessible accessibilityRole="image" accessibilityLabel="Country outline to identify">
       {paths.map((d, i) => (
         <Path key={i} d={d} fill={colors.accent} fillOpacity={0.9} stroke={colors.accentBright} strokeWidth={1.5} />
       ))}

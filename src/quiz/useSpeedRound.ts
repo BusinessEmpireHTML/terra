@@ -1,74 +1,78 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ELIGIBLE_POOLS, generateQuestion } from "./generators";
-import { applyAnswer, newProgressRecord } from "./srs";
-import { progressStore } from "../services/progressStore";
-import { activityStore, localDateString } from "../services/activityStore";
+import { recordAnswer } from "./answerRecorder";
 import { pickRandom } from "../utils/random";
 import type { Question, QuizCategory } from "./types";
 
 const SPEED_CATEGORIES: QuizCategory[] = ["flag", "capital", "currency", "neighbor"];
-const XP_CORRECT = 10;
+const FLASH_MS = 220;
+/** Don't show the same country again within this many questions. */
+const RECENT_WINDOW = 8;
 
-function randomQuestion(): Question {
+function randomQuestion(recentCountryIds: string[]): Question {
   const category = SPEED_CATEGORIES[Math.floor(Math.random() * SPEED_CATEGORIES.length)];
-  const country = pickRandom(ELIGIBLE_POOLS[category], 1)[0];
+  const pool = ELIGIBLE_POOLS[category].filter((c) => !recentCountryIds.includes(c.id));
+  const country = pickRandom(pool.length ? pool : ELIGIBLE_POOLS[category], 1)[0];
   return generateQuestion(category, country.id);
 }
 
 export function useSpeedRound(seconds = 60) {
-  const [timeLeft, setTimeLeft] = useState(seconds);
-  const [question, setQuestion] = useState<Question>(() => randomQuestion());
+  // Time is derived from a fixed deadline rather than decremented by an
+  // interval, so a throttled timer (backgrounded tab, busy JS thread) can't
+  // stretch the round past its real length.
+  const [endsAt] = useState(() => Date.now() + seconds * 1000);
+  const [now, setNow] = useState(() => Date.now());
+  const recentRef = useRef<string[]>([]);
+  const [question, setQuestion] = useState<Question>(() => {
+    const q = randomQuestion([]);
+    recentRef.current = [q.countryId];
+    return q;
+  });
   const [score, setScore] = useState(0);
   const [attempted, setAttempted] = useState(0);
   const [flash, setFlash] = useState<"correct" | "wrong" | null>(null);
-  const [running, setRunning] = useState(true);
-  const runningRef = useRef(true);
+  const answeredIdRef = useRef<string | null>(null);
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const timeLeft = Math.max(0, Math.ceil((endsAt - now) / 1000));
+  const isOver = timeLeft === 0;
 
   useEffect(() => {
-    if (!running) return;
-    const interval = setInterval(() => {
-      setTimeLeft((t) => {
-        if (t <= 1) {
-          clearInterval(interval);
-          runningRef.current = false;
-          setRunning(false);
-          return 0;
-        }
-        return t - 1;
-      });
-    }, 1000);
+    if (isOver) return;
+    const interval = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(interval);
-  }, [running]);
+  }, [isOver]);
+
+  useEffect(
+    () => () => {
+      if (flashTimer.current) clearTimeout(flashTimer.current);
+    },
+    []
+  );
 
   const answer = useCallback(
     (label: string) => {
-      if (!runningRef.current) return;
+      if (Date.now() >= endsAt) return;
+      if (answeredIdRef.current === question.id) return; // double tap on the same question
+      answeredIdRef.current = question.id;
+
       const correct = question.choices.find((c) => c.label === label)?.correct ?? false;
       setAttempted((a) => a + 1);
-      setFlash(correct ? "correct" : "wrong");
-      setTimeout(() => setFlash(null), 220);
-
       if (correct) setScore((s) => s + 1);
 
-      // Persist real progress in the background — speed round is fast, but still counts.
-      (async () => {
-        const existing = await progressStore.get(question.countryId, question.category);
-        const base = existing ?? newProgressRecord(question.countryId, question.category);
-        await progressStore.upsert(applyAnswer(base, correct));
-        await activityStore.log({
-          date: localDateString(),
-          timestamp: new Date().toISOString(),
-          countryId: question.countryId,
-          category: question.category,
-          correct,
-          xpEarned: correct ? XP_CORRECT : 0,
-        });
-      })();
+      setFlash(correct ? "correct" : "wrong");
+      if (flashTimer.current) clearTimeout(flashTimer.current);
+      flashTimer.current = setTimeout(() => setFlash(null), FLASH_MS);
 
-      setQuestion(randomQuestion());
+      // Speed round is fast, but it still counts toward SRS progress and XP.
+      recordAnswer(question, correct).catch(() => {});
+
+      const nextQuestion = randomQuestion(recentRef.current);
+      recentRef.current = [nextQuestion.countryId, ...recentRef.current].slice(0, RECENT_WINDOW);
+      setQuestion(nextQuestion);
     },
-    [question]
+    [question, endsAt]
   );
 
-  return { timeLeft, question, score, attempted, flash, isOver: !running, answer };
+  return { timeLeft, question, score, attempted, flash, isOver, answer };
 }

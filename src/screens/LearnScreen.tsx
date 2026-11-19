@@ -5,6 +5,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { GradientBackground, AnimatedPressable } from "../components/ui/Primitives";
 import { useTheme } from "../theme/ThemeProvider";
+import { fontFamily } from "../theme/tokens";
+import { DAILY_QUIZ_LENGTH } from "../quiz/sessionBuilder";
 import { progressStore } from "../services/progressStore";
 import { dailyStore } from "../services/dailyStore";
 import { overallStats } from "../quiz/mastery";
@@ -23,11 +25,16 @@ export default function LearnScreen() {
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
-      Promise.all([progressStore.getAll(), dailyStore.getToday()]).then(([r, d]) => {
-        if (cancelled) return;
-        setRecords(r);
-        setDaily(d);
-      });
+      Promise.all([progressStore.getAll(), dailyStore.getToday()])
+        .then(([r, d]) => {
+          if (cancelled) return;
+          setRecords(r);
+          setDaily(d);
+        })
+        .catch((err) => {
+          // Keep the tab usable (every mode still works) even if stats can't load.
+          if (__DEV__) console.warn("Failed to load learn stats:", err);
+        });
       return () => {
         cancelled = true;
       };
@@ -46,9 +53,11 @@ export default function LearnScreen() {
 
   return (
     <GradientBackground>
-      <SafeAreaView style={{ flex: 1 }}>
+      <SafeAreaView style={{ flex: 1 }} edges={["top", "left", "right"]}>
         <ScrollView contentContainerStyle={{ padding: space.lg, paddingBottom: space.xxl }}>
-          <Text style={[type.hero, { color: colors.textPrimary, fontSize: 30 }]}>Learn</Text>
+          <Text accessibilityRole="header" style={[type.hero, { color: colors.textPrimary, fontSize: 30 }]}>
+            Learn
+          </Text>
           <Text style={[type.subtitle, { color: colors.textMuted, marginTop: 2, marginBottom: space.lg }]}>
             Flags, capitals, shapes, and more — spaced out so it sticks
           </Text>
@@ -64,7 +73,11 @@ export default function LearnScreen() {
           <Text style={[type.section, { color: colors.textMuted, marginBottom: space.sm }]}>TODAY</Text>
 
           {countryOfDay && (
-            <Pressable onPress={() => router.push(`/country/${countryOfDay.id}`)}>
+            <Pressable
+              onPress={() => router.push(`/country/${countryOfDay.id}`)}
+              accessibilityRole="button"
+              accessibilityLabel={`Country of the day: ${countryOfDay.name.common}`}
+            >
               <View
                 style={{
                   flexDirection: "row",
@@ -88,7 +101,12 @@ export default function LearnScreen() {
           )}
 
           <View style={{ flexDirection: "row", gap: space.sm, marginBottom: space.lg }}>
-            <Pressable style={{ flex: 1 }} onPress={() => router.push("/quiz/mixed?daily=1")}>
+            <Pressable
+              style={{ flex: 1 }}
+              onPress={() => router.push("/quiz/mixed?daily=1")}
+              accessibilityRole="button"
+              accessibilityLabel={`Daily quiz, ${DAILY_QUIZ_LENGTH} questions${daily?.dailyQuizDone ? ", done today" : ""}`}
+            >
               <View
                 style={{
                   backgroundColor: colors.surfaceRaised,
@@ -106,12 +124,17 @@ export default function LearnScreen() {
                 />
                 <Text style={[type.bodySmall, { color: colors.textPrimary, marginTop: 6, textAlign: "center" }]}>Daily Quiz</Text>
                 <Text style={[type.label, { color: colors.textMuted, marginTop: 2, fontSize: 9 }]}>
-                  {daily?.dailyQuizDone ? "DONE" : "5 QUESTIONS"}
+                  {daily?.dailyQuizDone ? "DONE TODAY" : `${DAILY_QUIZ_LENGTH} QUESTIONS`}
                 </Text>
               </View>
             </Pressable>
 
-            <Pressable style={{ flex: 1 }} onPress={() => router.push("/speed-round")}>
+            <Pressable
+              style={{ flex: 1 }}
+              onPress={() => router.push("/speed-round")}
+              accessibilityRole="button"
+              accessibilityLabel={`Speed round, 60 seconds${daily?.speedRoundBestScore != null ? `, today's best ${daily.speedRoundBestScore}` : ""}`}
+            >
               <View
                 style={{
                   backgroundColor: colors.surfaceRaised,
@@ -125,13 +148,13 @@ export default function LearnScreen() {
                 <Ionicons name="flash-outline" size={22} color={colors.ember} />
                 <Text style={[type.bodySmall, { color: colors.textPrimary, marginTop: 6, textAlign: "center" }]}>Speed Round</Text>
                 <Text style={[type.label, { color: colors.textMuted, marginTop: 2, fontSize: 9 }]}>
-                  {daily?.speedRoundBestScore != null ? `BEST: ${daily.speedRoundBestScore}` : "60 SECONDS"}
+                  {daily?.speedRoundBestScore != null ? `TODAY'S BEST: ${daily.speedRoundBestScore}` : "60 SECONDS"}
                 </Text>
               </View>
             </Pressable>
           </View>
 
-          <AnimatedPressable onPress={() => router.push("/expeditions")}>
+          <AnimatedPressable onPress={() => router.push("/expeditions")} accessibilityLabel="Expeditions: curated journeys through the world">
             <View
               style={{
                 flexDirection: "row",
@@ -146,14 +169,17 @@ export default function LearnScreen() {
             >
               <Ionicons name="map-outline" size={22} color={colors.accent} style={{ marginRight: space.md }} />
               <View style={{ flex: 1 }}>
-                <Text style={[type.body, { color: colors.textPrimary, fontFamily: "Manrope_700Bold" }]}>Expeditions</Text>
+                <Text style={[type.body, { color: colors.textPrimary, fontFamily: fontFamily.bodySemiBold }]}>Expeditions</Text>
                 <Text style={[type.bodySmall, { color: colors.textMuted, marginTop: 2 }]}>Curated journeys through the world</Text>
               </View>
               <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
             </View>
           </AnimatedPressable>
 
-          <AnimatedPressable onPress={() => router.push("/quiz/mixed")}>
+          <AnimatedPressable
+            onPress={() => router.push("/quiz/mixed")}
+            accessibilityLabel={`Mixed review${totalDue > 0 ? `, ${totalDue} due for review` : ""}`}
+          >
             <View
               style={{
                 borderRadius: radius.lg,
@@ -177,7 +203,12 @@ export default function LearnScreen() {
           <Text style={[type.section, { color: colors.textMuted, marginBottom: space.sm }]}>MODES</Text>
           <View style={{ gap: space.sm }}>
             {QUIZ_CATEGORIES.map((cat) => (
-              <Pressable key={cat.key} onPress={() => router.push(`/quiz/${cat.key}`)}>
+              <Pressable
+                key={cat.key}
+                onPress={() => router.push(`/quiz/${cat.key}`)}
+                accessibilityRole="button"
+                accessibilityLabel={`${cat.label}${dueByCategory.has(cat.key) ? `, ${dueByCategory.get(cat.key)} due` : ""}`}
+              >
                 <View
                   style={{
                     flexDirection: "row",
@@ -213,7 +244,7 @@ export default function LearnScreen() {
                         marginRight: space.sm,
                       }}
                     >
-                      <Text style={[type.label, { color: "#fff", fontSize: 10 }]}>{dueByCategory.get(cat.key)}</Text>
+                      <Text style={[type.label, { color: "#fff", fontSize: 10, letterSpacing: 0.4 }]}>{dueByCategory.get(cat.key)} DUE</Text>
                     </View>
                   )}
                   <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
@@ -235,6 +266,8 @@ function StatPill({ label, value }: { label: string; value: string }) {
   const { colors, type, space, radius } = useTheme();
   return (
     <View
+      accessible
+      accessibilityLabel={`${label}: ${value}`}
       style={{
         flex: 1,
         backgroundColor: colors.surfaceRaised,

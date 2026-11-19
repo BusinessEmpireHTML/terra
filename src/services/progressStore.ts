@@ -1,6 +1,9 @@
 import { openDatabaseAsync, type SQLiteDatabase } from "expo-sqlite";
 import type { ProgressRecord, QuizCategory } from "../quiz/types";
 
+// Native SRS progress (SQLite, one row per country+category). The web build
+// uses progressStore.web.ts.
+
 let dbPromise: Promise<SQLiteDatabase> | null = null;
 
 function getDb(): Promise<SQLiteDatabase> {
@@ -51,15 +54,6 @@ export const progressStore = {
          dueAt = excluded.dueAt,
          lastReviewedAt = excluded.lastReviewedAt`,
       [record.countryId, record.category, record.box, record.correctCount, record.incorrectCount, record.dueAt, record.lastReviewedAt]
-    );
-  },
-
-  /** Records due for review right now, oldest-due first — the backbone of the "smart" quiz queue. */
-  async getDue(now = new Date(), limit = 100): Promise<ProgressRecord[]> {
-    const db = await getDb();
-    return db.getAllAsync<ProgressRecord>(
-      "SELECT * FROM progress WHERE dueAt <= ? ORDER BY dueAt ASC LIMIT ?",
-      [now.toISOString(), limit]
     );
   },
 

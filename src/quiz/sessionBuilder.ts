@@ -1,77 +1,115 @@
-import { ELIGIBLE_POOLS, generateQuestion, isEligible } from "./generators";
+import { ELIGIBLE_POOLS, generateQuestion } from "./generators";
 import { progressStore } from "../services/progressStore";
-import { pickRandom } from "../utils/random";
-import type { ProgressRecord, Question, QuizCategory } from "./types";
+import { shuffle } from "../utils/random";
+import { QUIZ_CATEGORIES, type ProgressRecord, type Question, type QuizCategory } from "./types";
 
 export type CategoryFilter = QuizCategory | "mixed";
 
-const ALL_CATEGORIES: QuizCategory[] = ["flag", "capital", "shape", "currency", "neighbor", "landmark", "food"];
+export const DEFAULT_SESSION_LENGTH = 10;
+export const DAILY_QUIZ_LENGTH = 5;
+
+const ALL_CATEGORIES: QuizCategory[] = QUIZ_CATEGORIES.map((c) => c.key);
+
+/** Narrows an untrusted value (e.g. a URL segment) to a valid filter. */
+export function isCategoryFilter(value: unknown): value is CategoryFilter {
+  return value === "mixed" || ALL_CATEGORIES.includes(value as QuizCategory);
+}
 
 function categoryPool(filter: CategoryFilter): QuizCategory[] {
   return filter === "mixed" ? ALL_CATEGORIES : [filter];
 }
 
-/**
- * Builds a session of `length` questions. Due-for-review (country, category)
- * pairs are prioritized first — that's the spaced-repetition payoff — and
- * the remainder is filled with fresh pairs the user hasn't tried yet.
- *
- * Two distinct modes:
- *  - Broad (no focusCountryId): no country repeats within the session, so a
- *    10-question round touches 10 different places.
- *  - Focused (focusCountryId set, e.g. "Practice this country" from the
- *    country page): the country is fixed, so instead no *category* repeats
- *    — you get flag, capital, shape, etc. for that one country, not the
- *    same question seven times.
- */
-export async function buildSession(filter: CategoryFilter, length = 10, focusCountryId?: string): Promise<Question[]> {
-  const categories = categoryPool(filter);
-  const dueRecords = await progressStore.getDue();
-  const usedCountries = new Set<string>();
-  const usedCategories = new Set<QuizCategory>();
-  const questions: Question[] = [];
-
-  const dueForFilter = dueRecords
-    .filter((r) => categories.includes(r.category as QuizCategory))
-    .filter((r) => !focusCountryId || r.countryId === focusCountryId)
-    .filter((r) => isEligible(r.category as QuizCategory, r.countryId));
-
-  for (const record of dueForFilter) {
-    if (questions.length >= length) break;
-    const category = record.category as QuizCategory;
-    if (focusCountryId ? usedCategories.has(category) : usedCountries.has(record.countryId)) continue;
-    questions.push(generateQuestion(category, record.countryId));
-    usedCountries.add(record.countryId);
-    usedCategories.add(category);
-  }
-
-  // Fill the rest with fresh pairs.
-  let guard = 0;
-  while (questions.length < length && guard < length * 20) {
-    guard++;
-    const remainingCategories = focusCountryId ? categories.filter((c) => !usedCategories.has(c)) : categories;
-    if (remainingCategories.length === 0) break; // focused mode: ran out of categories for this country
-    const category = remainingCategories[Math.floor(Math.random() * remainingCategories.length)];
-
-    let candidatePool = ELIGIBLE_POOLS[category];
-    if (focusCountryId) {
-      candidatePool = candidatePool.filter((c) => c.id === focusCountryId);
-      if (candidatePool.length === 0) continue; // this country isn't eligible for this category
-    } else {
-      candidatePool = candidatePool.filter((c) => !usedCountries.has(c.id));
-    }
-
-    const candidate = pickRandom(candidatePool, 1)[0];
-    if (!candidate) continue;
-
-    questions.push(generateQuestion(category, candidate.id));
-    usedCountries.add(candidate.id);
-    usedCategories.add(category);
-  }
-
-  return questions;
+export interface SessionOptions {
+  /** Number of questions to aim for (fewer if the filter doesn't have enough material). */
+  length?: number;
+  /** "Practice this country": every question is about this one country. */
+  focusCountryId?: string;
+  /** Restrict questions to these countries (e.g. an expedition's list). */
+  countryIds?: string[];
 }
 
-export async function recordAnswer(record: ProgressRecord): Promise<void> {
-  await progressStore.upsert(record);
+interface Pair {
+  countryId: string;
+  category: QuizCategory;
+}
+
+const pairKey = (countryId: string, category: string) => `${countryId}|${category}`;
+
+/**
+ * Orders every allowed (country, category) pair by how much it deserves a
+ * slot: overdue reviews first (oldest first — the spaced-repetition payoff),
+ * then never-seen pairs (shuffled), then pairs that aren't due yet (soonest
+ * first) as a last resort, e.g. when practicing one country you already know.
+ */
+export function rankPairs(candidates: Pair[], records: ProgressRecord[], now = new Date()): Pair[] {
+  const recordByKey = new Map(records.map((r) => [pairKey(r.countryId, r.category), r]));
+  const due: { pair: Pair; dueAt: number }[] = [];
+  const fresh: Pair[] = [];
+  const notYetDue: { pair: Pair; dueAt: number }[] = [];
+
+  for (const pair of candidates) {
+    const record = recordByKey.get(pairKey(pair.countryId, pair.category));
+    if (!record) {
+      fresh.push(pair);
+      continue;
+    }
+    const dueAt = new Date(record.dueAt).getTime();
+    (dueAt <= now.getTime() ? due : notYetDue).push({ pair, dueAt });
+  }
+
+  const byDueAt = (a: { dueAt: number }, b: { dueAt: number }) => a.dueAt - b.dueAt;
+  return [...due.sort(byDueAt).map((d) => d.pair), ...shuffle(fresh), ...notYetDue.sort(byDueAt).map((d) => d.pair)];
+}
+
+/**
+ * Picks up to `length` pairs from a ranked list. No pair ever repeats. In the
+ * first pass no *country* repeats either, so a 10-question round touches 10
+ * different places; a second pass relaxes that only when the pool is too
+ * small (a single focused country, or a 5-country expedition).
+ */
+export function selectPairs(ranked: Pair[], length: number): Pair[] {
+  const chosen: Pair[] = [];
+  const usedPairs = new Set<string>();
+  const usedCountries = new Set<string>();
+
+  for (const allowCountryRepeat of [false, true]) {
+    for (const pair of ranked) {
+      if (chosen.length >= length) return chosen;
+      const key = pairKey(pair.countryId, pair.category);
+      if (usedPairs.has(key)) continue;
+      if (!allowCountryRepeat && usedCountries.has(pair.countryId)) continue;
+      chosen.push(pair);
+      usedPairs.add(key);
+      usedCountries.add(pair.countryId);
+    }
+  }
+  return chosen;
+}
+
+export async function buildSession(filter: CategoryFilter, options: SessionOptions = {}): Promise<Question[]> {
+  const { length = DEFAULT_SESSION_LENGTH, focusCountryId, countryIds } = options;
+  const allowed = focusCountryId ? new Set([focusCountryId]) : countryIds ? new Set(countryIds) : null;
+
+  const candidates: Pair[] = [];
+  for (const category of categoryPool(filter)) {
+    for (const country of ELIGIBLE_POOLS[category]) {
+      if (!allowed || allowed.has(country.id)) candidates.push({ countryId: country.id, category });
+    }
+  }
+
+  const records = await progressStore.getAll();
+  const ranked = rankPairs(candidates, records);
+
+  // Over-select slightly so one unexpected generation failure can't shorten
+  // the session, then trim.
+  const questions: Question[] = [];
+  for (const pair of selectPairs(ranked, length + 3)) {
+    if (questions.length >= length) break;
+    try {
+      questions.push(generateQuestion(pair.category, pair.countryId));
+    } catch (err) {
+      if (__DEV__) console.warn(`Skipping ${pair.category} question for ${pair.countryId}:`, err);
+    }
+  }
+  return questions;
 }
