@@ -34,3 +34,9 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+
+# data generator scratch output (older versions of scripts/prepare-data.mjs)
+scripts/out-*
+
+# Skia for web (copied from node_modules by the postinstall script)
+public/canvaskit.wasm

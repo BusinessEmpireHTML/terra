@@ -1,37 +1,49 @@
 {
   "expo": {
-    "name": "terra",
+    "name": "Terra",
     "slug": "terra",
     "version": "1.0.0",
+    "description": "A geography app you explore instead of memorize: a gesture-driven globe, every country's story, and spaced-repetition quizzes.",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "scheme": "terra",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/images/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
+    "backgroundColor": "#0E1B29",
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#0E1B29"
       }
     },
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "name": "Terra",
+      "shortName": "Terra",
+      "themeColor": "#0E1B29",
+      "backgroundColor": "#0E1B29"
     },
     "plugins": [
       "expo-router",
       "expo-sqlite",
       "expo-font",
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 240,
+          "resizeMode": "contain",
+          "backgroundColor": "#0E1B29",
+          "dark": {
+            "backgroundColor": "#0E1B29"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

@@ -1,34 +1,41 @@
-import { Storage } from "expo-sqlite/kv-store";
-import { COUNTRIES } from "../data/countries";
-import { localDateString } from "./activityStore";
+import { kv } from "./kv";
+import { localDateString } from "../gamification/streaks";
+import { countryOfTheDay, type DailyAnswer } from "../quiz/daily";
 import type { DailyState } from "../gamification/types";
+
+export { countryOfTheDay };
 
 const KEY_PREFIX = "terra:daily:";
 
-/** Deterministic pick — same country all day for everyone on this device, changes daily without needing a server. */
-export function countryOfTheDay(date = localDateString()): string {
-  let hash = 0;
-  for (let i = 0; i < date.length; i++) {
-    hash = (hash * 31 + date.charCodeAt(i)) >>> 0;
-  }
-  return COUNTRIES[hash % COUNTRIES.length].id;
-}
 
 export const dailyStore = {
   async getToday(): Promise<DailyState> {
     const date = localDateString();
-    const raw = await Storage.getItemAsync(KEY_PREFIX + date);
-    if (raw) return JSON.parse(raw) as DailyState;
-    return { date, countryOfTheDayId: countryOfTheDay(date), dailyQuizDone: false, speedRoundBestScore: null };
+    const fresh: DailyState = {
+      date,
+      countryOfTheDayId: countryOfTheDay(date),
+      dailyQuizDone: false,
+      dailyQuizAnswers: null,
+      speedRoundBestScore: null,
+    };
+    const raw = await kv.getItemAsync(KEY_PREFIX + date);
+    if (!raw) return fresh;
+    try {
+      return { ...fresh, ...(JSON.parse(raw) as Partial<DailyState>) };
+    } catch {
+      return fresh; // corrupt entry: start the day over rather than crash the Learn tab
+    }
   },
 
   async save(state: DailyState): Promise<void> {
-    await Storage.setItemAsync(KEY_PREFIX + state.date, JSON.stringify(state));
+    await kv.setItemAsync(KEY_PREFIX + state.date, JSON.stringify(state));
   },
 
-  async markDailyQuizDone(): Promise<void> {
+  /** Records today's Daily Quiz result. The first attempt is the one that counts (and gets shared). */
+  async markDailyQuizDone(date: string, answers: DailyAnswer[]): Promise<void> {
     const state = await this.getToday();
-    await this.save({ ...state, dailyQuizDone: true });
+    if (state.date !== date || state.dailyQuizDone) return;
+    await this.save({ ...state, dailyQuizDone: true, dailyQuizAnswers: answers });
   },
 
   async recordSpeedRoundScore(score: number): Promise<void> {

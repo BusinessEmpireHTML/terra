@@ -10,13 +10,60 @@
 //    GitHub — religion composition by country, 2020 estimates.
 //    License: CC BY 4.0 — attribution to Pew Research Center is required
 //    wherever this data is shown (see README.md).
+//  - World Bank total population (SP.POP.TOTL), via datasets/population on
+//    GitHub — latest year available per country. License: ODC-PDDL (public
+//    domain); credited in README.md anyway.
 //
-// Re-run with: npm install world-countries world-atlas topojson-client --no-save
-//              node prepare-data.mjs
+// Re-run from the repo root with (versions pinned so output is reproducible):
+//   npm install world-countries@5.1.0 world-atlas@2.0.2 topojson-client@3 --no-save
+//   npm run data
+// Output is written straight to src/data/. Review the diff before committing.
 import countries from "world-countries";
 import topology from "world-atlas/countries-110m.json" with { type: "json" };
 import * as topojson from "topojson-client";
 import { writeFileSync } from "node:fs";
+
+const POPULATION_CSV_URL = "https://raw.githubusercontent.com/datasets/population/main/data/population.csv";
+
+// The World Bank doesn't publish figures for the Holy See, so it gets a
+// manual estimate instead of a silent gap.
+const POPULATION_FALLBACKS = {
+  VAT: { value: 882, year: 2024 }, // Holy See official estimate
+};
+
+/**
+ * Corrections for places where the upstream `world-countries` dataset is
+ * stale or misleading for quiz purposes. Each entry replaces the named
+ * fields wholesale. Keep the reason next to every override so the next
+ * reviewer can tell when one stops being needed.
+ */
+const DATA_CORRECTIONS = {
+  // Joined the eurozone on 1 January 2026, replacing the lev.
+  BGR: { currencies: [{ code: "EUR", name: "Euro", symbol: "€" }] },
+  // The convertible peso (CUC) was abolished in 2021.
+  CUB: { currencies: [{ code: "CUP", name: "Cuban peso", symbol: "$" }] },
+  // Upstream lists nine currencies alphabetically, which made the quiz's
+  // "primary currency" the Botswana pula. ZiG replaced the RTGS dollar in
+  // April 2024; the US dollar remains in wide everyday use.
+  ZWE: {
+    currencies: [
+      { code: "ZWG", name: "Zimbabwe Gold", symbol: "ZiG" },
+      { code: "USD", name: "United States dollar", symbol: "$" },
+    ],
+  },
+  // Upstream has no currency; Micronesia uses the US dollar.
+  FSM: { currencies: [{ code: "USD", name: "United States dollar", symbol: "$" }] },
+  // Redenominated in 2022 (new code SLE).
+  SLE: { currencies: [{ code: "SLE", name: "Sierra Leonean leone", symbol: "Le" }] },
+  // Mbabane is the administrative capital most references give; Lobamba is
+  // the royal and legislative capital.
+  SWZ: { capital: ["Mbabane", "Lobamba"] },
+  // Sucre is the constitutional capital; La Paz is the seat of government.
+  BOL: { capital: ["Sucre", "La Paz"] },
+  // Upstream lists India as a land neighbor; the two only share a maritime
+  // boundary, which made the Neighbors quiz teach a wrong fact.
+  LKA: { borders: undefined },
+};
 
 const RELIGIONS_CSV_URL =
   "https://raw.githubusercontent.com/datasets/world-religion-projections/main/rounded_percentage.csv";
@@ -97,6 +144,24 @@ async function loadReligions() {
     byCca3[cca3] = top.map((s) => ({ name: friendlyGroupName(s.name), percent: Math.round(s.percent * 10) / 10 }));
   }
   return byCca3;
+}
+
+/** Latest World Bank population figure per ISO3 code: { [cca3]: { value, year } }. */
+async function loadPopulation() {
+  const res = await fetch(POPULATION_CSV_URL);
+  if (!res.ok) throw new Error(`Failed to fetch population dataset: ${res.status}`);
+  const latest = { ...POPULATION_FALLBACKS };
+  const [, ...lines] = (await res.text()).trim().split("\n");
+  for (const line of lines) {
+    // Country names can contain commas ("Korea, Rep."), so read from the right.
+    const cells = line.split(",");
+    const value = Number(cells.at(-1));
+    const year = Number(cells.at(-2));
+    const code = cells.at(-3);
+    if (!code || !Number.isFinite(value) || !Number.isFinite(year)) continue;
+    if (!latest[code] || latest[code].year < year) latest[code] = { value, year };
+  }
+  return latest;
 }
 
 // ---- Hand-curated highlights for a first wave of featured countries -------
@@ -336,13 +401,20 @@ function callingCode(idd) {
   return idd.root + idd.suffixes[0];
 }
 
-const religionsByCca3 = await loadReligions();
+const [religionsByCca3, populationByCca3] = await Promise.all([loadReligions(), loadPopulation()]);
 
-const terraCountries = countries
-  .filter((c) => c.independent || c.unMember || c.cca3 === "VAT") // sovereign states + Vatican
+const sovereign = countries.filter((c) => c.independent || c.unMember || c.cca3 === "VAT"); // sovereign states + Vatican
+const sovereignIds = new Set(sovereign.map((c) => c.cca3));
+
+const terraCountries = sovereign
   .map((c) => {
     const featured = FEATURED[c.cca3];
-    return {
+    const population = populationByCca3[c.cca3];
+    // Only keep neighbors that are themselves in the app's country list, so
+    // every code in `borders` resolves (upstream also lists territories such
+    // as Western Sahara, Gibraltar, Hong Kong and Kosovo's placeholder "UNK").
+    const borders = (c.borders ?? []).filter((b) => sovereignIds.has(b));
+    const record = {
       id: c.cca3,
       cca2: c.cca2,
       ccn3: c.ccn3,
@@ -353,7 +425,8 @@ const terraCountries = countries
       capital: c.capital && c.capital.length ? c.capital : undefined,
       latlng: [c.latlng[0], c.latlng[1]],
       areaKm2: c.area || undefined,
-      population: c.population || undefined,
+      population: population?.value,
+      populationYear: population?.year,
       languages: c.languages ? Object.values(c.languages) : undefined,
       currencies: c.currencies
         ? Object.entries(c.currencies).map(([code, v]) => ({ code, name: v.name, symbol: v.symbol }))
@@ -361,34 +434,34 @@ const terraCountries = countries
       callingCode: callingCode(c.idd),
       tld: c.tld && c.tld.length ? c.tld : undefined,
       landlocked: c.landlocked ?? undefined,
-      borders: c.borders && c.borders.length ? c.borders : undefined,
+      borders: borders.length ? borders : undefined,
       hasBorderGeometry: borderCoverage.has(c.cca3),
       religions: religionsByCca3[c.cca3],
       accentColor: featured?.accentColor,
       funFact: featured?.funFact,
     };
+    return { ...record, ...DATA_CORRECTIONS[c.cca3] };
   })
   .sort((a, b) => a.name.common.localeCompare(b.name.common));
 
 // ---- Write output -----------------------------------------------------------
 const tsOut =
-  `// AUTO-GENERATED by data-prep/prepare-data.mjs — do not hand-edit.\n` +
-  `// Sources: world-countries (ODbL); religion composition from Pew Research\n` +
-  `// Center, "Religious Composition by Country" (CC BY 4.0) — attribution\n` +
-  `// required, see README.md.\n` +
+  `// AUTO-GENERATED by scripts/prepare-data.mjs — do not hand-edit.\n` +
+  `// Sources: world-countries (ODbL); population from the World Bank\n` +
+  `// (SP.POP.TOTL); religion composition from Pew Research Center (CC BY 4.0)\n` +
+  `// — attribution required, see README.md.\n` +
   `import type { Country } from "../types/country";\n\n` +
   `export const COUNTRIES: Country[] = ${JSON.stringify(terraCountries, null, 2)} satisfies Country[];\n`;
 
-writeFileSync(new URL("./out-countries.ts", import.meta.url), tsOut);
-writeFileSync(
-  new URL("./out-worldBorders.json", import.meta.url),
-  JSON.stringify(worldBorders)
-);
+writeFileSync(new URL("../src/data/countries.ts", import.meta.url), tsOut);
+writeFileSync(new URL("../src/data/worldBorders.json", import.meta.url), JSON.stringify(worldBorders));
 
 const religionCoverage = terraCountries.filter((c) => c.religions).length;
+const populationCoverage = terraCountries.filter((c) => c.population).length;
 console.log(`Countries: ${terraCountries.length}`);
 console.log(`Border features: ${worldBorders.length} (matched: ${borderCoverage.size})`);
 console.log(`Religion data: ${religionCoverage} / ${terraCountries.length}`);
+console.log(`Population data: ${populationCoverage} / ${terraCountries.length}`);
 console.log(`Featured (fun fact) countries: ${Object.keys(FEATURED).length}`);
 const unmatchedFeatured = Object.keys(FEATURED).filter((id) => !borderCoverage.has(id));
 if (unmatchedFeatured.length) console.log("Featured w/o polygon geometry:", unmatchedFeatured);

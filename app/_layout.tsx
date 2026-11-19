@@ -17,12 +17,12 @@ export default function RootLayout() {
 
   useEffect(() => {
     hydrateFromDisk();
-  }, []);
+  }, [hydrateFromDisk]);
 
   const ready = (fontsLoaded || fontError) && hydrated;
 
   useEffect(() => {
-    if (ready) SplashScreen.hideAsync();
+    if (ready) SplashScreen.hideAsync().catch(() => {});
   }, [ready]);
 
   if (!ready) return null;
@@ -37,13 +37,16 @@ export default function RootLayout() {
 }
 
 function Nav() {
-  const { scheme } = useTheme();
+  const { scheme, colors } = useTheme();
   return (
     <>
       <StatusBar style={scheme === "dark" ? "light" : "dark"} />
-      <Stack screenOptions={{ headerShown: false }}>
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="country/[code]" options={{ presentation: "card" }} />
+        {/* Quizzes slide up like a sheet: they're a focused task you finish or close, not a place you navigate through. */}
+        <Stack.Screen name="quiz/[category]" options={{ animation: "slide_from_bottom" }} />
+        <Stack.Screen name="speed-round" options={{ animation: "slide_from_bottom", gestureEnabled: false }} />
       </Stack>
     </>
   );

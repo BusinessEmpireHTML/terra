@@ -22,15 +22,15 @@ export default function TabLayout() {
     >
       <Tabs.Screen
         name="index"
-        options={{ title: "Globe", tabBarIcon: ({ color, size }) => <Ionicons name="globe-outline" size={size} color={color} /> }}
+        options={{ title: "Globe", tabBarIcon: ({ color, size }) => <Ionicons name="globe-outline" size={size} color={String(color)} /> }}
       />
       <Tabs.Screen
         name="learn"
-        options={{ title: "Learn", tabBarIcon: ({ color, size }) => <Ionicons name="school-outline" size={size} color={color} /> }}
+        options={{ title: "Learn", tabBarIcon: ({ color, size }) => <Ionicons name="school-outline" size={size} color={String(color)} /> }}
       />
       <Tabs.Screen
         name="profile"
-        options={{ title: "Profile", tabBarIcon: ({ color, size }) => <Ionicons name="person-circle-outline" size={size} color={color} /> }}
+        options={{ title: "Profile", tabBarIcon: ({ color, size }) => <Ionicons name="person-circle-outline" size={size} color={String(color)} /> }}
       />
     </Tabs>
   );

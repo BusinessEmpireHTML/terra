@@ -1,9 +1,8 @@
 /**
- * Core country record. Phase 1 populates the "atlas" fields below for every
- * sovereign country from open geographic data. Richer, hand-authored content
- * (history, culture, nature, landmarks, food, language lessons) arrives in
- * later phases as `Country["content"]` grows — see CountryDetailScreen for
- * how unpopulated sections degrade gracefully in the meantime.
+ * Core country record, generated for all 194 countries by
+ * scripts/prepare-data.mjs from open data (see README.md for sources).
+ * Hand-written narrative content lives separately in
+ * src/data/countryContent.ts, keyed by the same `id`.
  */
 export interface Country {
   /** ISO 3166-1 alpha-3 code. Primary key everywhere in the app. */
@@ -17,7 +16,7 @@ export interface Country {
   };
 
   flagEmoji: string;
-  /** Accent color derived from the flag; only curated for featured countries so far. */
+  /** Accent color drawn from the flag's most distinctive hue (curated for every country). */
   accentColor?: string;
 
   region: Continent;
@@ -26,7 +25,10 @@ export interface Country {
   /** [latitude, longitude] of the country's rough centroid. */
   latlng: [number, number];
   areaKm2?: number;
+  /** Total population (World Bank, SP.POP.TOTL), latest year available. */
   population?: number;
+  /** The year `population` refers to. */
+  populationYear?: number;
   landlocked?: boolean;
 
   languages?: string[];
@@ -34,7 +36,7 @@ export interface Country {
   callingCode?: string;
   tld?: string[];
 
-  /** Neighboring countries' cca3 codes. */
+  /** Land neighbors' cca3 codes. Every code resolves to another entry in COUNTRIES. */
   borders?: string[];
 
   /** Whether this country has renderable border geometry on the globe. */
@@ -50,7 +52,7 @@ export interface Country {
    */
   religions?: ReligionShare[];
 
-  /** A single hand-written highlight, only present for featured countries so far. */
+  /** A single hand-written highlight (present for every country). */
   funFact?: string;
 }
 
@@ -71,8 +73,8 @@ export interface CountryCurrency {
  * Hand-authored narrative content, keyed separately from the auto-generated
  * `Country` records (see src/data/countryContent.ts). Every field is
  * optional and independent — a country can have History without Culture,
- * three Landmarks without Food, etc. CountryDetailScreen renders whatever
- * exists and shows an honest "coming soon" card for whatever doesn't.
+ * three Landmarks without Food, etc. (Vatican City, for instance, has no
+ * Food or Nature section.) CountryDetailScreen renders whatever exists.
  */
 export interface CountryContent {
   history?: HistoryEvent[];

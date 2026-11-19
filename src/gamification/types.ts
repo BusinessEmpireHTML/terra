@@ -1,5 +1,6 @@
 import type { Continent } from "../types/country";
 import type { QuizCategory } from "../quiz/types";
+import type { DailyAnswer } from "../quiz/daily";
 
 export interface ActivityEvent {
   id?: number;
@@ -74,5 +75,7 @@ export interface DailyState {
   date: string;
   countryOfTheDayId: string;
   dailyQuizDone: boolean;
+  /** Today's Daily Quiz answers, in order (null until played). */
+  dailyQuizAnswers: DailyAnswer[] | null;
   speedRoundBestScore: number | null;
 }

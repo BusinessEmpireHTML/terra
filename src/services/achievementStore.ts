@@ -1,6 +1,8 @@
 import { openDatabaseAsync, type SQLiteDatabase } from "expo-sqlite";
 import type { UnlockedAchievement } from "../gamification/types";
 
+// Native achievement storage (SQLite). The web build uses achievementStore.web.ts.
+
 let dbPromise: Promise<SQLiteDatabase> | null = null;
 
 function getDb(): Promise<SQLiteDatabase> {

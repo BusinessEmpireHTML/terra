@@ -1,48 +1,79 @@
 import { create } from "zustand";
 import { storage } from "../services/storage";
 
+export type ThemeMode = "light" | "dark" | "system";
+const THEME_MODES: ThemeMode[] = ["light", "dark", "system"];
+
 interface AppState {
   hydrated: boolean;
   favorites: Set<string>;
   recents: string[]; // cca3 codes, most recent first
+  themeMode: ThemeMode;
   toggleFavorite: (cca3: string) => void;
-  isFavorite: (cca3: string) => boolean;
   recordVisit: (cca3: string) => void;
+  setThemeMode: (mode: ThemeMode) => void;
   hydrateFromDisk: () => Promise<void>;
 }
 
 const MAX_RECENTS = 12;
+/** The splash screen waits on hydration, so a storage call that never settles must not hang the app. */
+const HYDRATE_TIMEOUT_MS = 4000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`Timed out after ${ms}ms`)), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      }
+    );
+  });
+}
 
 export const useAppStore = create<AppState>((set, get) => ({
   hydrated: false,
   favorites: new Set(),
   recents: [],
+  themeMode: "system",
 
-  toggleFavorite: (cca3) =>
-    set((state) => {
-      const next = new Set(state.favorites);
-      if (next.has(cca3)) next.delete(cca3);
-      else next.add(cca3);
-      storage.saveFavorites(Array.from(next)).catch(() => {});
-      return { favorites: next };
-    }),
+  toggleFavorite: (cca3) => {
+    const next = new Set(get().favorites);
+    if (next.has(cca3)) next.delete(cca3);
+    else next.add(cca3);
+    set({ favorites: next });
+    storage.saveFavorites(Array.from(next)).catch(() => {});
+  },
 
-  isFavorite: (cca3) => get().favorites.has(cca3),
+  recordVisit: (cca3) => {
+    const recents = [cca3, ...get().recents.filter((c) => c !== cca3)].slice(0, MAX_RECENTS);
+    set({ recents });
+    storage.saveRecents(recents).catch(() => {});
+  },
 
-  recordVisit: (cca3) =>
-    set((state) => {
-      const withoutDupe = state.recents.filter((c) => c !== cca3);
-      const recents = [cca3, ...withoutDupe].slice(0, MAX_RECENTS);
-      storage.saveRecents(recents).catch(() => {});
-      return { recents };
-    }),
+  setThemeMode: (mode) => {
+    set({ themeMode: mode });
+    storage.saveThemeMode(mode).catch(() => {});
+  },
 
   hydrateFromDisk: async () => {
     try {
-      const [favorites, recents] = await Promise.all([storage.loadFavorites(), storage.loadRecents()]);
-      set({ favorites: new Set(favorites), recents, hydrated: true });
+      const [favorites, recents, themeMode] = await withTimeout(
+        Promise.all([storage.loadFavorites(), storage.loadRecents(), storage.loadThemeMode()]),
+        HYDRATE_TIMEOUT_MS
+      );
+      set({
+        favorites: new Set(favorites),
+        recents,
+        themeMode: THEME_MODES.includes(themeMode as ThemeMode) ? (themeMode as ThemeMode) : "system",
+        hydrated: true,
+      });
     } catch {
-      // Storage read failed (corrupt data, disk issue, first-run edge case).
+      // Storage read failed or hung (corrupt data, disk issue, first-run edge case).
       // Fall back to empty state rather than leaving `hydrated` false forever
       // — the caller (app/_layout.tsx) gates the splash screen on this, so
       // never resolving would soft-lock the app on a blank screen.

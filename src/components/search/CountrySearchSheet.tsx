@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from "react";
-import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { FlatList, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { searchCountries } from "../../utils/search";
 import { COUNTRIES } from "../../data/countries";
 import { useTheme } from "../../theme/ThemeProvider";
 import { GradientBackground } from "../ui/Primitives";
@@ -14,25 +16,25 @@ interface Props {
 export function CountrySearchSheet({ visible, onClose, onSelect }: Props) {
   const { colors, type, space, radius } = useTheme();
   const [query, setQuery] = useState("");
+  const insets = useSafeAreaInsets();
 
-  const results = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return COUNTRIES;
-    return COUNTRIES.filter(
-      (c) =>
-        c.name.common.toLowerCase().includes(q) ||
-        c.name.official.toLowerCase().includes(q) ||
-        (c.capital ?? []).some((cap) => cap.toLowerCase().includes(q))
-    );
-  }, [query]);
+  const results = useMemo(() => searchCountries(COUNTRIES, query), [query]);
+
+  const close = () => {
+    setQuery("");
+    onClose();
+  };
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={close}>
       <GradientBackground>
-        <View style={{ flex: 1, paddingTop: 64, paddingHorizontal: space.lg }}>
+        {/* iOS page sheets sit below the status bar already; Android/web modals are full-screen. */}
+        <View style={{ flex: 1, paddingTop: Platform.OS === "ios" ? space.lg : insets.top + space.md, paddingHorizontal: space.lg }}>
           <View style={{ flexDirection: "row", alignItems: "center", marginBottom: space.md }}>
-            <Text style={[type.title, { color: colors.textPrimary, flex: 1 }]}>Jump anywhere</Text>
-            <Pressable onPress={onClose} hitSlop={12}>
+            <Text accessibilityRole="header" style={[type.title, { color: colors.textPrimary, flex: 1 }]}>
+              Jump anywhere
+            </Text>
+            <Pressable onPress={close} hitSlop={12} accessibilityRole="button" accessibilityLabel="Close search">
               <Ionicons name="close" size={26} color={colors.textSecondary} />
             </Pressable>
           </View>
@@ -55,6 +57,17 @@ export function CountrySearchSheet({ visible, onClose, onSelect }: Props) {
               onChangeText={setQuery}
               placeholder="Country or capital…"
               placeholderTextColor={colors.textMuted}
+              accessibilityLabel="Search by country or capital"
+              autoCorrect={false}
+              autoCapitalize="none"
+              returnKeyType="search"
+              clearButtonMode="while-editing"
+              onSubmitEditing={() => {
+                if (results.length > 0) {
+                  setQuery("");
+                  onSelect(results[0].id);
+                }
+              }}
               autoFocus
               style={[type.body, { color: colors.textPrimary, flex: 1, paddingVertical: 12, paddingHorizontal: space.sm }]}
             />
@@ -64,6 +77,8 @@ export function CountrySearchSheet({ visible, onClose, onSelect }: Props) {
             data={results}
             keyExtractor={(c) => c.id}
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            contentContainerStyle={{ paddingBottom: insets.bottom + space.lg }}
             ListEmptyComponent={
               <View style={{ paddingTop: space.xl, alignItems: "center" }}>
                 <Text style={[type.body, { color: colors.textMuted }]}>No country matches "{query}"</Text>
@@ -75,6 +90,8 @@ export function CountrySearchSheet({ visible, onClose, onSelect }: Props) {
                   setQuery("");
                   onSelect(item.id);
                 }}
+                accessibilityRole="button"
+                accessibilityLabel={item.capital ? `${item.name.common}, capital ${item.capital[0]}` : item.name.common}
                 style={{
                   flexDirection: "row",
                   alignItems: "center",

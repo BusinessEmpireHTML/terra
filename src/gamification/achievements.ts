@@ -1,12 +1,13 @@
 import { COUNTRIES } from "../data/countries";
 import { MAX_BOX } from "../quiz/srs";
+import { MASTERED_THRESHOLD } from "../quiz/mastery";
 import type { CountryMastery, ProgressRecord, QuizCategory } from "../quiz/types";
 import type { Achievement, ContinentBreakdown, StatsSnapshot } from "./types";
 import type { Continent } from "../types/country";
 
 export const ACHIEVEMENTS: Achievement[] = [
   // Milestones
-  { id: "first_flag", title: "First Flag", description: "Answer your first question correctly", icon: "flag", tier: "bronze" },
+  { id: "first_flag", title: "First Flag", description: "Correctly identify your first flag", icon: "flag", tier: "bronze" },
   { id: "ten_correct", title: "Getting Started", description: "10 correct answers", icon: "checkmark-circle", tier: "bronze" },
   { id: "fifty_correct", title: "Building Momentum", description: "50 correct answers", icon: "checkmark-circle", tier: "bronze" },
   { id: "hundred_correct", title: "100 Correct Answers", description: "100 correct answers", icon: "ribbon", tier: "silver" },
@@ -19,6 +20,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "capital_novice_10", title: "Capital Novice", description: "Master 10 capitals", icon: "business", tier: "bronze" },
   { id: "capital_master_50", title: "Capital Master", description: "Master 50 capitals", icon: "business", tier: "silver" },
   { id: "shape_shifter_25", title: "Shape Shifter", description: "Master 25 country shapes", icon: "shapes", tier: "silver" },
+  { id: "navigator_25", title: "Navigator", description: "Master finding 25 countries on the globe", icon: "navigate", tier: "silver" },
   { id: "currency_collector_25", title: "Currency Collector", description: "Master 25 currencies", icon: "cash", tier: "silver" },
   { id: "good_neighbor_25", title: "Good Neighbor", description: "Master 25 neighbor questions", icon: "git-network", tier: "silver" },
   { id: "landmark_hunter_25", title: "Landmark Hunter", description: "Master 25 landmarks", icon: "camera", tier: "silver" },
@@ -41,7 +43,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "bearings_10", title: "Getting Your Bearings", description: "Start learning about 10 countries", icon: "compass", tier: "bronze" },
   { id: "world_traveler_50", title: "World Traveler", description: "Start learning about 50 countries", icon: "compass", tier: "silver" },
   { id: "globe_trotter_100", title: "Globe Trotter", description: "Start learning about 100 countries", icon: "compass", tier: "gold" },
-  { id: "every_corner", title: "Every Corner", description: "Start learning about all 194 countries", icon: "planet", tier: "gold" },
+  { id: "every_corner", title: "Every Corner", description: `Start learning about all ${COUNTRIES.length} countries`, icon: "planet", tier: "gold" },
   { id: "favorites_5", title: "Building a List", description: "Favorite 5 countries", icon: "heart", tier: "bronze" },
   { id: "favorites_20", title: "Bucket List", description: "Favorite 20 countries", icon: "heart", tier: "silver" },
 
@@ -52,7 +54,7 @@ export const ACHIEVEMENTS: Achievement[] = [
 
   // Accuracy & completion
   { id: "sharp_shooter", title: "Sharp Shooter", description: "90%+ accuracy over 50+ answers", icon: "locate", tier: "silver" },
-  { id: "flag_completionist", title: "Every Flag", description: "Attempt the flag quiz for all 194 countries", icon: "flag", tier: "gold" },
+  { id: "flag_completionist", title: "Every Flag", description: `Attempt the flag quiz for all ${COUNTRIES.length} countries`, icon: "flag", tier: "gold" },
   { id: "capital_completionist", title: "Every Capital", description: "Attempt the capital quiz for every eligible country", icon: "business", tier: "gold" },
 
   // XP
@@ -82,7 +84,7 @@ function regionMeetsBar(breakdown: ContinentBreakdown | undefined): boolean {
   return breakdown.avgScore >= 70 && breakdown.countriesStarted >= minBreadth;
 }
 
-const REGION_ACHIEVEMENT: Record<string, Continent> = {
+const REGION_ACHIEVEMENT: Record<string, Exclude<Continent, "Antarctic">> = {
   africa_expert: "Africa",
   asia_expert: "Asia",
   europe_expert: "Europe",
@@ -97,7 +99,7 @@ export function evaluateAchievements(ctx: AchievementContext): Set<string> {
   const { stats, progressRecords, masteryByCountry, favoritesCount } = ctx;
   const unlocked = new Set<string>();
 
-  if (stats.totalCorrect >= 1) unlocked.add("first_flag");
+  if (progressRecords.some((r) => r.category === "flag" && r.correctCount > 0)) unlocked.add("first_flag");
   if (stats.totalCorrect >= 10) unlocked.add("ten_correct");
   if (stats.totalCorrect >= 50) unlocked.add("fifty_correct");
   if (stats.totalCorrect >= 100) unlocked.add("hundred_correct");
@@ -109,6 +111,7 @@ export function evaluateAchievements(ctx: AchievementContext): Set<string> {
   if (boxMasteredCount(progressRecords, "capital") >= 10) unlocked.add("capital_novice_10");
   if (boxMasteredCount(progressRecords, "capital") >= 50) unlocked.add("capital_master_50");
   if (boxMasteredCount(progressRecords, "shape") >= 25) unlocked.add("shape_shifter_25");
+  if (boxMasteredCount(progressRecords, "locate") >= 25) unlocked.add("navigator_25");
   if (boxMasteredCount(progressRecords, "currency") >= 25) unlocked.add("currency_collector_25");
   if (boxMasteredCount(progressRecords, "neighbor") >= 25) unlocked.add("good_neighbor_25");
   if (boxMasteredCount(progressRecords, "landmark") >= 25) unlocked.add("landmark_hunter_25");
@@ -137,7 +140,7 @@ export function evaluateAchievements(ctx: AchievementContext): Set<string> {
   if (favoritesCount >= 20) unlocked.add("favorites_20");
 
   const legendCount = Array.from(masteryByCountry.values()).filter((m) => m.score >= 100).length;
-  const masterCount = Array.from(masteryByCountry.values()).filter((m) => m.score >= 85).length;
+  const masterCount = Array.from(masteryByCountry.values()).filter((m) => m.score >= MASTERED_THRESHOLD).length;
   if (legendCount >= 1) unlocked.add("legend_1");
   if (legendCount >= 10) unlocked.add("legend_10");
   if (masterCount >= 25) unlocked.add("master_25");

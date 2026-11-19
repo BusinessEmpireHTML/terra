@@ -9,13 +9,14 @@ export function computeExpeditionProgress(expedition: Expedition, masteryByCount
   const completedCountryIds = expedition.countryIds.filter(
     (id) => (masteryByCountry.get(id)?.score ?? 0) >= EXPEDITION_COMPLETION_THRESHOLD
   );
-  const percentComplete = Math.round((completedCountryIds.length / expedition.countryIds.length) * 100);
+  const total = expedition.countryIds.length;
+  const percentComplete = total === 0 ? 0 : Math.round((completedCountryIds.length / total) * 100);
   return {
     expeditionId: expedition.id,
     completedCountryIds,
-    totalCountries: expedition.countryIds.length,
+    totalCountries: total,
     percentComplete,
-    isComplete: completedCountryIds.length === expedition.countryIds.length,
+    isComplete: total > 0 && completedCountryIds.length === total,
   };
 }
 
