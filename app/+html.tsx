@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { ScrollViewStyleReset } from "expo-router/html";
+import { ScrollViewStyleReset, useServerDocumentContext } from "expo-router/html";
 import { darkColors, lightColors } from "../src/theme/tokens";
 
 // This file is web-only and used to configure the root HTML for every
@@ -7,8 +7,12 @@ import { darkColors, lightColors } from "../src/theme/tokens";
 // The contents of this function only run in Node.js environments and
 // do not have access to the DOM or browser APIs.
 export default function Root({ children }: { children: ReactNode }) {
+  // Since Expo SDK 58, the page's scripts, styles and metadata arrive as
+  // `headNodes`/`bodyNodes` and must be rendered here — without them the
+  // exported pages have no <script> tags and stay blank.
+  const { htmlAttributes, bodyAttributes, headNodes, bodyNodes } = useServerDocumentContext();
   return (
-    <html lang="en">
+    <html lang="en" {...htmlAttributes}>
       <head>
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
@@ -29,8 +33,12 @@ export default function Root({ children }: { children: ReactNode }) {
 
         {/* Raw CSS so the page background matches the app's palette before React hydrates (no white flash in dark mode). */}
         <style dangerouslySetInnerHTML={{ __html: responsiveBackground }} />
+        {headNodes}
       </head>
-      <body>{children}</body>
+      <body {...bodyAttributes}>
+        {children}
+        {bodyNodes}
+      </body>
     </html>
   );
 }

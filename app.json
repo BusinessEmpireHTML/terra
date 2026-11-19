@@ -9,12 +9,6 @@
     "scheme": "terra",
     "userInterfaceStyle": "automatic",
     "backgroundColor": "#0E1B29",
-    "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/images/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#0E1B29"
-    },
     "ios": {
       "supportsTablet": true
     },
@@ -37,7 +31,19 @@
       "expo-router",
       "expo-sqlite",
       "expo-font",
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 240,
+          "resizeMode": "contain",
+          "backgroundColor": "#0E1B29",
+          "dark": {
+            "backgroundColor": "#0E1B29"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
