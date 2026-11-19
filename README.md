@@ -5,8 +5,8 @@ globe, a rich page for every one of the world's 194 countries, and
 spaced-repetition quizzes that make it stick. Fully offline, no accounts, no
 API keys.
 
-Built with Expo (SDK 52), Expo Router, React Native SVG, Reanimated and
-SQLite. Runs on iOS, Android and the web.
+Built with Expo (SDK 58), Expo Router, React Native Skia, Reanimated 4,
+Gesture Handler 3 and SQLite. Runs on iOS, Android and the web.
 
 ## Run it
 
@@ -16,8 +16,13 @@ npx expo start          # then press i / a, or scan the QR code with Expo Go
 npx expo start --web    # or run it in a browser
 ```
 
-If Expo Go complains about a native module, use a development build instead:
-`npx expo prebuild` then `npx expo run:ios` / `npx expo run:android`.
+Requires Node 22+. The project tracks the current Expo SDK, which is the one
+the Expo Go app in the stores runs. If Expo Go ever complains about a native
+module, use a development build instead: `npx expo prebuild` then
+`npx expo run:ios` / `npx expo run:android`.
+
+`npm install` also copies Skia's CanvasKit (`canvaskit.wasm`) into `public/`
+for the web build (the `postinstall` script); it's git-ignored.
 
 ### Scripts
 
@@ -35,11 +40,14 @@ export on every push to `main` and on every pull request.
 ## What's inside
 
 ### Explore
-- **The globe** (`src/components/globe/Globe.tsx`): a hand-rolled
-  orthographic projection, the same trick antique globes and atlases use.
-  Drag to rotate, pinch to zoom, tap any country (or its marker, for
-  microstates) to fly there. Three layers: **Political**, **Population
-  density** and **Mastery**, where countries light up as you learn them.
+- **The globe** (`src/components/globe/`): a hand-rolled orthographic
+  projection, the same trick antique globes and atlases use, drawn with
+  React Native Skia. Gestures update shared values on the UI thread and a
+  worklet re-projects the whole map into a single `SkPicture` each frame, so
+  dragging never re-renders React. Drag to rotate, pinch to zoom, and tap any
+  country (or its marker, for microstates) to fly there. Three layers:
+  **Political**, **Population density** and **Mastery**, where countries
+  light up as you learn them.
 - **Country pages** for all 194 countries: population (World Bank, 2025),
   area, density, coordinates, languages, currencies, calling code, internet
   domain, land neighbors you can hop between, religious composition (Pew
@@ -49,11 +57,16 @@ export on every push to `main` and on every pull request.
   São Tomé and Príncipe) and ranked by how well the name matches.
 
 ### Learn
-- **7 quiz categories**, all generated from the data above, so there's no
+- **8 quiz categories**, all generated from the data above, so there's no
   separate quiz content to maintain: Flags and Capitals (194 countries),
-  Currencies (194), Landmarks (194), Food (190), Shapes (165, the countries
-  with a usable outline at this map scale) and Neighbors (155; island
-  nations have no land neighbors).
+  Currencies (194), Landmarks (194), Food (190), Shapes and **Find it** (165,
+  the countries with a usable outline at this map scale) and Neighbors (155;
+  island nations have no land neighbors).
+- **Find it on the globe**: no multiple choice. You rotate the globe and
+  tap where the country is. The reveal flies to the answer, shows how far off
+  you were, and what the country borders. Tapping a country's marker always
+  counts, which keeps small countries fair, and "I don't know — show me" is
+  there for anyone who can't (or won't) use the gesture.
 - **Fair questions.** Exactly one choice is ever right: distractors never
   repeat, never include a currency the country *also* uses, a dish or
   landmark it shares with a neighbor, or a flag that looks identical at emoji
@@ -61,20 +74,33 @@ export on every push to `main` and on every pull request.
   like "Rice" or "Fresh seafood" are never used as prompts. Two of the three
   wrong answers come from the same region, so you can't solve questions by
   elimination.
-- **Spaced repetition** (`src/quiz/srs.ts`): a 6-box Leitner system
-  (0, 1, 3, 7, 16 and 35-day intervals). Sessions serve overdue reviews
-  first, then material you've never seen, and only then items that aren't
-  due yet.
+- **Spaced repetition with FSRS-6** (`src/quiz/fsrs.ts`, `srs.ts`): the
+  modern memory model behind Anki's scheduler. Each (country, category) pair
+  tracks *stability* (how long the memory lasts) and *difficulty*, and comes
+  back when the predicted chance of recalling it drops to 90%: 2 days, then
+  11, 46, 157… while answers stay right, and in 10 minutes after a miss.
+  Same-day repeats don't inflate stability, so cramming can't fake mastery.
+  The implementation is dependency-free and bit-identical to the reference
+  (`ts-fsrs`) across 240,000 random reviews. Sessions serve overdue reviews
+  first, then material you've never seen.
 - **Mastery** (`src/quiz/mastery.ts`): per country, *how well* you know what
   you've tried × *how much* of the country you've explored, across the
   categories that actually apply to it. Eight levels, Explorer → Legend.
-- **Daily challenges**: a Country of the Day (the same for everyone, no
-  server needed), a 5-question Daily Quiz, and a 60-second Speed Round.
+- **Daily challenges**: a Country of the Day, a 60-second Speed Round, and
+  a numbered **Daily Quiz that's the same for everyone**: five questions
+  seeded from the date (no server needed), one attempt per day, and a
+  spoiler-free result to share:
+
+  ```
+  Terra Daily #323 🌍 4/5
+  🟩🟩🟥🟩🟩
+  🗿🤝🚩🏛️🔷
+  ```
 - **Practice anything**: a single country, a whole expedition, one category,
   or a mixed review.
 
 ### Progress
-- **39 achievements**, each with a real, computable condition
+- **40 achievements**, each with a real, computable condition
   (`src/gamification/achievements.ts`). Tap a badge to see how to earn it.
 - **10 expeditions**: curated journeys like Silk Road, Island Nations and
   Countries of the Equator, each with a fact-checked country list (enforced
@@ -106,10 +132,14 @@ search) is kept free of storage and UI, and that's where the tests live
 ### Storage
 
 On iOS and Android everything is stored in SQLite: one row per
-(country, category) for spaced repetition, an append-only activity log for
-streaks/XP/heatmap, and unlocked achievements. `expo-sqlite` has no web
-build in SDK 52, so the web app uses drop-in `*.web.ts` versions of the same
-stores backed by `localStorage` (Metro picks them automatically).
+(country, category) for spaced repetition (with an FSRS migration via
+`PRAGMA user_version`; older Leitner records are converted on their next
+answer, not reset), an append-only activity log for streaks/XP/heatmap, and
+unlocked achievements. The web app uses drop-in `*.web.ts` versions of the
+same stores backed by `localStorage` (Metro picks them automatically).
+`expo-sqlite` does run on the web now, but it needs `SharedArrayBuffer`,
+which means cross-origin-isolation headers that many static hosts can't
+set, so the lighter fallback stays.
 
 ## Data
 
@@ -144,9 +174,10 @@ hand-written and never touched by the generator.
 2. ~~Content~~: narrative content and religion data for all 194 countries.
 3. ~~Learning engine~~: 7 quiz modes, spaced repetition, mastery.
 4. ~~Gamification~~: achievements, stats, daily challenges, expeditions.
-5. **Polish and reach** (in progress): accessibility (screen-reader labels
-   done; dynamic type and reduced motion next), web support (done), then
-   sync, social features, an AI tutor and a WebGL globe.
+5. **Polish and reach** (in progress): screen-reader labels, web support,
+   a GPU-rendered globe, FSRS scheduling, Find it, and a shareable Daily are
+   done. Next: dynamic type and reduced motion, then sync, social features,
+   an AI tutor, and a textured 3D globe.
 
 ## Known gaps
 
@@ -161,8 +192,26 @@ hand-written and never touched by the generator.
   data source rather than a bundled file.
 - **Web storage is per-browser** (`localStorage`), so clearing site data
   resets progress.
+- **The web build downloads CanvasKit** (~8 MB of WebAssembly, ~3 MB
+  compressed) the first time the globe is shown. Native apps don't.
 
 ## Changelog
+
+### Expo SDK 58, Skia globe, FSRS, Find it, shareable Daily (November 2026)
+
+- **Upgraded Expo SDK 52 → 58** (React 19.3, React Native 0.88, Reanimated
+  4, Gesture Handler 3, TypeScript 6), so the project runs in today's Expo
+  Go. Notable migration fixes: `app/+html.tsx` must now render
+  `useServerDocumentContext()`'s nodes (otherwise web pages ship with no
+  scripts), and the splash screen moved to the `expo-splash-screen` plugin.
+- **Globe rendered with Skia** on the UI thread (see *Explore*).
+- **Fixed: the globe was a mirror image**, with east drawn on the left
+  (Madagascar west of Africa), since the very first version, and dragging
+  down tipped it up. Regression tests now pin the orientation.
+- **FSRS-6 scheduling** replaces the Leitner boxes (see *Learn*).
+- **Find it on the globe**, a new quiz category and a Navigator achievement.
+- **Daily Quiz is the same for everyone**, with a shareable result.
+- 115 unit tests.
 
 ### Review pass (November 2026)
 
