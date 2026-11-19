@@ -24,6 +24,12 @@ describe.each(CATEGORIES)("%s questions", (category: QuizCategory) => {
 
         expect(q.countryId).toBe(country.id);
         expect(q.category).toBe(category);
+        if (category === "locate") {
+          // Answered by tapping the globe: the only "choice" is the country itself.
+          expect(q.choices).toEqual([{ label: country.name.common, correct: true }]);
+          expect(q.promptVisual).toBe("globe");
+          continue;
+        }
         expect(labels).toHaveLength(4);
         expect(new Set(labels).size).toBe(4); // no duplicate choices
         expect(q.choices.filter((c) => c.correct)).toHaveLength(1);

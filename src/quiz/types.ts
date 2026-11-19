@@ -8,6 +8,7 @@ export type QuizCategory =
   | "flag"
   | "capital"
   | "shape"
+  | "locate"
   | "currency"
   | "neighbor"
   | "landmark"
@@ -17,6 +18,7 @@ export const QUIZ_CATEGORIES: { key: QuizCategory; label: string; icon: string }
   { key: "flag", label: "Flags", icon: "flag-outline" },
   { key: "capital", label: "Capitals", icon: "business-outline" },
   { key: "shape", label: "Shapes", icon: "shapes-outline" },
+  { key: "locate", label: "Find it", icon: "locate-outline" },
   { key: "currency", label: "Currencies", icon: "cash-outline" },
   { key: "neighbor", label: "Neighbors", icon: "git-network-outline" },
   { key: "landmark", label: "Landmarks", icon: "camera-outline" },
@@ -34,8 +36,10 @@ export interface Question {
   category: QuizCategory;
   countryId: string; // which country's progress/mastery record this question feeds
   promptLabel: string; // e.g. "What is the capital of Chile?"
-  promptVisual?: "flag" | "shape"; // when set, the screen renders the flag/shape instead of relying on prompt text alone
-  choices: QuestionChoice[]; // exactly one has correct: true; labels are unique
+  /** When set, the screen renders a flag or outline — or, for "globe", the player answers by tapping the globe. */
+  promptVisual?: "flag" | "shape" | "globe";
+  /** Exactly one has correct: true; labels are unique. Globe questions have just the one correct choice (the country to find). */
+  choices: QuestionChoice[];
   explanation: string;
 }
 

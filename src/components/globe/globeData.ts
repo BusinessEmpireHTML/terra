@@ -109,6 +109,8 @@ export interface GlobeHit {
   countryId: string | null;
   /** Where on Earth the tap landed, or null if it missed the globe entirely. */
   lonLat: [number, number] | null;
+  /** Every country whose marker is within reach of the tap, nearest first. */
+  nearbyIds: string[];
 }
 
 const MARKER_HIT_RADIUS = 16; // px — generous tap target for small markers
@@ -121,16 +123,18 @@ const MARKER_HIT_RADIUS = 16; // px — generous tap target for small markers
 export function hitTest(x: number, y: number, view: GlobeView): GlobeHit {
   const lonLat = unproject((x - view.cx) / view.radius, (y - view.cy) / view.radius, view.rotation);
 
-  let nearest: { id: string; dist: number } | null = null;
+  const near: { id: string; dist: number }[] = [];
   for (const c of COUNTRIES) {
     const p = project(c.latlng[1], c.latlng[0], view.rotation);
     if (!p.visible) continue;
     const dist = Math.hypot(view.cx + p.x * view.radius - x, view.cy + p.y * view.radius - y);
-    if (dist <= MARKER_HIT_RADIUS && (!nearest || dist < nearest.dist)) nearest = { id: c.id, dist };
+    if (dist <= MARKER_HIT_RADIUS) near.push({ id: c.id, dist });
   }
+  near.sort((a, b) => a.dist - b.dist);
+  const nearest = near[0];
 
   const inside = lonLat ? countryAt(lonLat[0], lonLat[1]) : null;
   const markerIsMicrostate = nearest ? !COUNTRY_BY_ID.get(nearest.id)?.hasBorderGeometry : false;
   const countryId = nearest && (markerIsMicrostate || !inside) ? nearest.id : inside;
-  return { countryId, lonLat };
+  return { countryId, lonLat, nearbyIds: near.map((n) => n.id) };
 }

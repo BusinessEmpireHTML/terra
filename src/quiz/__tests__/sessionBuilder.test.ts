@@ -58,7 +58,7 @@ describe("buildSession", () => {
     const qs = await buildSession("mixed", { length: 10, focusCountryId: "FRA" });
     expect(qs.every((q) => q.countryId === "FRA")).toBe(true);
     expect(new Set(qs.map((q) => q.category)).size).toBe(qs.length);
-    expect(qs.length).toBe(7);
+    expect(qs.length).toBe(8);
   });
 
   it("stays within an expedition's countries, repeating countries only when needed", async () => {

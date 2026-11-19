@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { GradientBackground, PrimaryButton } from "../components/ui/Primitives";
 import { QuestionCard } from "../components/quiz/QuestionCard";
+import { LocateCard } from "../components/quiz/LocateCard";
 import { useTheme } from "../theme/ThemeProvider";
 import { useQuizSession } from "../quiz/useQuizSession";
 import { whenAnswersSaved } from "../quiz/answerRecorder";
@@ -124,11 +125,17 @@ export default function QuizSessionScreen({ filter, focusCountryId, expeditionId
           </CenteredMessage>
         )}
 
-        {currentQuestion && (
-          <ScrollView contentContainerStyle={{ padding: space.lg, paddingBottom: space.xxl }}>
-            <QuestionCard question={currentQuestion} answered={answered} onSelect={submitAnswer} />
-          </ScrollView>
-        )}
+        {currentQuestion &&
+          (currentQuestion.promptVisual === "globe" ? (
+            // No ScrollView here: a vertical drag must rotate the globe, not scroll the page.
+            <View style={{ flex: 1, paddingHorizontal: space.lg, paddingTop: space.md }}>
+              <LocateCard question={currentQuestion} answered={answered} onSelect={submitAnswer} />
+            </View>
+          ) : (
+            <ScrollView contentContainerStyle={{ padding: space.lg, paddingBottom: space.xxl }}>
+              <QuestionCard question={currentQuestion} answered={answered} onSelect={submitAnswer} />
+            </ScrollView>
+          ))}
 
         {isComplete && (
           <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: space.xl }}>

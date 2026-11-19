@@ -200,6 +200,43 @@ export default function LearnScreen() {
             </View>
           </AnimatedPressable>
 
+          <AnimatedPressable
+            onPress={() => router.push("/quiz/locate")}
+            accessibilityLabel="Find it on the globe: tap where each country is"
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: colors.surfaceRaised,
+                borderRadius: radius.lg,
+                borderWidth: 1,
+                borderColor: colors.accentSecondary,
+                padding: space.md,
+                marginBottom: space.lg,
+              }}
+            >
+              <View
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 22,
+                  backgroundColor: colors.accentSecondary + "33",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginRight: space.md,
+                }}
+              >
+                <Ionicons name="earth" size={24} color={colors.accentSecondary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[type.body, { color: colors.textPrimary, fontFamily: fontFamily.bodySemiBold }]}>Find it on the globe</Text>
+                <Text style={[type.bodySmall, { color: colors.textMuted, marginTop: 2 }]}>No multiple choice — tap where each country is</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+            </View>
+          </AnimatedPressable>
+
           <Text style={[type.section, { color: colors.textMuted, marginBottom: space.sm }]}>MODES</Text>
           <View style={{ gap: space.sm }}>
             {QUIZ_CATEGORIES.map((cat) => (

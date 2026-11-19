@@ -11,12 +11,12 @@ describe("mastery", () => {
     const m = computeMastery("FRA", []);
     expect(m.score).toBe(0);
     expect(m.level).toBe("explorer");
-    expect(m.categoriesAvailable).toBe(7);
+    expect(m.categoriesAvailable).toBe(8);
   });
 
   it("requires breadth: one perfect category isn't mastery", () => {
     const m = computeMastery("FRA", [record("FRA", "flag", MAX_BOX)]);
-    expect(m.score).toBe(Math.round(100 / 7));
+    expect(m.score).toBe(Math.round(100 / 8));
   });
 
   it("lets an island nation reach Legend (no neighbor category to block it)", () => {
@@ -30,6 +30,7 @@ describe("mastery", () => {
   it("lets a microstate with no outline or neighbors reach Legend too", () => {
     const categories = availableCategoriesFor("TUV");
     expect(categories).not.toContain("shape");
+    expect(categories).not.toContain("locate");
     const m = computeMastery("TUV", categories.map((c) => record("TUV", c, MAX_BOX)));
     expect(m.score).toBe(100);
   });

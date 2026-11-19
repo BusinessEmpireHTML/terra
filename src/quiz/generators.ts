@@ -3,7 +3,7 @@ import { COUNTRY_CONTENT } from "../data/countryContent";
 import { shuffle, pickRandom } from "../utils/random";
 import { normalizeName } from "../utils/text";
 import type { Continent, Country } from "../types/country";
-import type { Question, QuestionChoice, QuizCategory } from "./types";
+import { QUIZ_CATEGORIES, type Question, type QuestionChoice, type QuizCategory } from "./types";
 
 const byId = new Map(COUNTRIES.map((c) => [c.id, c]));
 
@@ -98,6 +98,8 @@ export function isEligible(category: QuizCategory, countryId: string): boolean {
     case "capital":
       return Boolean(c.capital?.[0]);
     case "shape":
+    case "locate":
+      // Both need an outline: one to draw, the other to tap.
       return c.hasBorderGeometry;
     case "currency":
       return Boolean(c.currencies?.[0]?.name);
@@ -110,7 +112,7 @@ export function isEligible(category: QuizCategory, countryId: string): boolean {
   }
 }
 
-const CATEGORY_KEYS: QuizCategory[] = ["flag", "capital", "shape", "currency", "neighbor", "landmark", "food"];
+const CATEGORY_KEYS: QuizCategory[] = QUIZ_CATEGORIES.map((c) => c.key);
 
 /** The eligible-country pools per category, exposed so the session builder can pick valid pairs without guessing and retrying. */
 export const ELIGIBLE_POOLS = Object.fromEntries(
@@ -220,6 +222,26 @@ function generateShape(country: Country): Question {
   };
 }
 
+/** "Find it on the globe": no choices to pick from — the player taps the globe. */
+function generateLocate(country: Country): Question {
+  const neighbors = knownNeighbors(country).map(countryName);
+  // "Australia is in Australia and New Zealand" reads oddly, so use the continent when the subregion repeats the name.
+  const area = country.subregion && !country.subregion.includes(country.name.common) ? country.subregion : country.region;
+  const where = `${country.name.common} is in ${area}`;
+  const context = neighbors.length
+    ? `It borders ${listJoin(neighbors.length > 3 ? [...neighbors.slice(0, 3), `${neighbors.length - 3} more`] : neighbors)}.`
+    : "It has no land borders at all.";
+  return {
+    id: `locate:${country.id}:${nonce()}`,
+    category: "locate",
+    countryId: country.id,
+    promptLabel: `Find ${country.name.common}`,
+    promptVisual: "globe",
+    choices: [{ label: country.name.common, correct: true }],
+    explanation: `${where}. ${context}`,
+  };
+}
+
 function generateCurrency(country: Country): Question {
   const [primary, ...others] = country.currencies!.map((c) => c.name);
   // Exclude *every* currency the country uses, so e.g. Panama's question
@@ -289,6 +311,7 @@ const GENERATORS: Record<QuizCategory, (c: Country) => Question> = {
   flag: generateFlag,
   capital: generateCapital,
   shape: generateShape,
+  locate: generateLocate,
   currency: generateCurrency,
   neighbor: generateNeighbor,
   landmark: generateLandmark,

@@ -56,10 +56,15 @@ describe("hitTest", () => {
     const ocean = hitTest(150, 150, pacific);
     expect(ocean.countryId).toBeNull();
     expect(ocean.lonLat![0]).toBeCloseTo(-150, 6);
-    expect(hitTest(2, 2, pacific)).toEqual({ countryId: null, lonLat: null });
+    expect(hitTest(2, 2, pacific)).toEqual({ countryId: null, lonLat: null, nearbyIds: [] });
   });
 
   it("lets a microstate's marker win over the country around it", () => {
     expect(hitTest(150, 150, centeredOn("SMR")).countryId).toBe("SMR");
+  });
+
+  it("reports every marker within reach, nearest first", () => {
+    const hit = hitTest(150, 150, centeredOn("LUX"));
+    expect(hit.nearbyIds[0]).toBe("LUX");
   });
 });

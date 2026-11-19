@@ -20,6 +20,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "capital_novice_10", title: "Capital Novice", description: "Master 10 capitals", icon: "business", tier: "bronze" },
   { id: "capital_master_50", title: "Capital Master", description: "Master 50 capitals", icon: "business", tier: "silver" },
   { id: "shape_shifter_25", title: "Shape Shifter", description: "Master 25 country shapes", icon: "shapes", tier: "silver" },
+  { id: "navigator_25", title: "Navigator", description: "Master finding 25 countries on the globe", icon: "navigate", tier: "silver" },
   { id: "currency_collector_25", title: "Currency Collector", description: "Master 25 currencies", icon: "cash", tier: "silver" },
   { id: "good_neighbor_25", title: "Good Neighbor", description: "Master 25 neighbor questions", icon: "git-network", tier: "silver" },
   { id: "landmark_hunter_25", title: "Landmark Hunter", description: "Master 25 landmarks", icon: "camera", tier: "silver" },
@@ -110,6 +111,7 @@ export function evaluateAchievements(ctx: AchievementContext): Set<string> {
   if (boxMasteredCount(progressRecords, "capital") >= 10) unlocked.add("capital_novice_10");
   if (boxMasteredCount(progressRecords, "capital") >= 50) unlocked.add("capital_master_50");
   if (boxMasteredCount(progressRecords, "shape") >= 25) unlocked.add("shape_shifter_25");
+  if (boxMasteredCount(progressRecords, "locate") >= 25) unlocked.add("navigator_25");
   if (boxMasteredCount(progressRecords, "currency") >= 25) unlocked.add("currency_collector_25");
   if (boxMasteredCount(progressRecords, "neighbor") >= 25) unlocked.add("good_neighbor_25");
   if (boxMasteredCount(progressRecords, "landmark") >= 25) unlocked.add("landmark_hunter_25");
