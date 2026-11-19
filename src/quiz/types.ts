@@ -45,15 +45,20 @@ export interface AnswerResult {
   correct: boolean;
 }
 
-/** Leitner-box spaced-repetition record for one (country, category) pair. */
+/** Spaced-repetition record for one (country, category) pair (FSRS; see srs.ts). */
 export interface ProgressRecord {
   countryId: string;
   category: QuizCategory;
-  box: number; // 0–5, higher = better known
+  /** Memory-strength level 0–5 derived from `stability` (higher = better known). */
+  box: number;
   correctCount: number;
   incorrectCount: number;
   dueAt: string; // ISO timestamp
   lastReviewedAt: string | null;
+  /** FSRS stability in days; null for records saved before FSRS (migrated on next answer). */
+  stability?: number | null;
+  /** FSRS difficulty, 1–10; null for records saved before FSRS. */
+  difficulty?: number | null;
 }
 
 export const MASTERY_LEVELS = [

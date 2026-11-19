@@ -21,6 +21,14 @@ import type { CountryMastery } from "../quiz/types";
 
 const COUNTRY_BY_ID = new Map(COUNTRIES.map((c) => [c.id, c]));
 
+/** "Review due now" / "Next review tomorrow" / "Next review in 12 days" — when FSRS predicts recall dips to 90%. */
+function describeNextReview(dueAt: number): string {
+  const days = Math.ceil((dueAt - Date.now()) / (24 * 60 * 60 * 1000));
+  if (days <= 0) return "review due now";
+  if (days === 1) return "next review tomorrow";
+  return `next review in ${days} days`;
+}
+
 function densityLabel(country: Country): string {
   if (!country.population || !country.areaKm2) return "—";
   const d = country.population / country.areaKm2;
@@ -38,6 +46,7 @@ export default function CountryDetailScreen({ cca3 }: { cca3: string }) {
   const toggleFavorite = useAppStore((s) => s.toggleFavorite);
   const recordVisit = useAppStore((s) => s.recordVisit);
   const [mastery, setMastery] = useState<CountryMastery | null>(null);
+  const [nextReviewAt, setNextReviewAt] = useState<number | null>(null);
 
   useEffect(() => {
     if (country) recordVisit(country.id);
@@ -49,7 +58,10 @@ export default function CountryDetailScreen({ cca3 }: { cca3: string }) {
       progressStore
         .getAll()
         .then((records) => {
-          if (!cancelled) setMastery(computeMastery(cca3, records));
+          if (cancelled) return;
+          setMastery(computeMastery(cca3, records));
+          const due = records.filter((r) => r.countryId === cca3 && r.lastReviewedAt).map((r) => new Date(r.dueAt).getTime());
+          setNextReviewAt(due.length ? Math.min(...due) : null);
         })
         .catch(() => {});
       return () => {
@@ -197,6 +209,7 @@ export default function CountryDetailScreen({ cca3 }: { cca3: string }) {
                 </View>
                 <Text style={[type.bodySmall, { color: colors.textMuted, marginTop: 6 }]}>
                   {mastery.categoriesAttempted} / {mastery.categoriesAvailable} quiz categories explored
+                  {nextReviewAt != null ? ` · ${describeNextReview(nextReviewAt)}` : ""}
                 </Text>
                 <PrimaryButton
                   label={`Practice ${country.name.common}`}

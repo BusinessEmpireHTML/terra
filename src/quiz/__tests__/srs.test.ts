@@ -1,39 +1,64 @@
-import { applyAnswer, isDue, MAX_BOX, newProgressRecord } from "../srs";
+import { applyAnswer, isDue, MAX_BOX, newProgressRecord, recallProbability, strengthLevel } from "../srs";
+import type { ProgressRecord } from "../types";
 
 const DAY = 24 * 60 * 60 * 1000;
-const now = new Date("2026-06-01T12:00:00Z");
+const start = new Date("2026-06-01T12:00:00Z");
+const at = (days: number) => new Date(start.getTime() + days * DAY);
+const daysUntilDue = (r: ProgressRecord, from: Date) => Math.round((new Date(r.dueAt).getTime() - from.getTime()) / DAY);
 
-describe("Leitner SRS", () => {
-  it("starts new records in box 0, due immediately", () => {
-    const r = newProgressRecord("FRA", "flag", now);
+describe("FSRS scheduling", () => {
+  it("starts new records unseen and due immediately", () => {
+    const r = newProgressRecord("FRA", "flag", start);
     expect(r.box).toBe(0);
-    expect(isDue(r, now)).toBe(true);
+    expect(r.stability).toBeNull();
+    expect(isDue(r, start)).toBe(true);
+    expect(recallProbability(r, start)).toBeNull();
   });
 
-  it("moves up one box per correct answer with growing intervals", () => {
-    let r = newProgressRecord("FRA", "flag", now);
+  it("spaces reviews further apart as answers keep being right", () => {
+    let r = newProgressRecord("FRA", "flag", start);
+    let now = start;
     const intervals: number[] = [];
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 4; i++) {
       r = applyAnswer(r, true, now);
-      intervals.push(Math.round((new Date(r.dueAt).getTime() - now.getTime()) / DAY));
+      const gap = daysUntilDue(r, now);
+      intervals.push(gap);
+      now = at(intervals.reduce((a, b) => a + b, 0));
     }
+    // Matches the FSRS reference for reviews taken exactly when due…
+    expect(intervals.slice(0, 3)).toEqual([2, 11, 46]);
+    // …and keeps growing by a large factor while answers stay right.
+    expect(intervals[3]).toBeGreaterThan(intervals[2] * 3);
     expect(r.box).toBe(MAX_BOX);
-    expect(intervals).toEqual([1, 3, 7, 16, 35, 35]);
-    expect(r.correctCount).toBe(6);
+    expect(r.correctCount).toBe(4);
   });
 
-  it("drops two boxes on a wrong answer, never below zero", () => {
-    let r = { ...newProgressRecord("FRA", "flag", now), box: 4 };
-    r = applyAnswer(r, false, now);
-    expect(r.box).toBe(2);
-    r = applyAnswer(applyAnswer(r, false, now), false, now);
+  it("brings a missed answer back within the next session", () => {
+    const r = applyAnswer(newProgressRecord("FRA", "flag", start), false, start);
+    expect(new Date(r.dueAt).getTime() - start.getTime()).toBe(10 * 60 * 1000);
+    expect(r.incorrectCount).toBe(1);
     expect(r.box).toBe(0);
-    expect(r.incorrectCount).toBe(3);
   });
 
-  it("is not due before its interval elapses", () => {
-    const r = applyAnswer(newProgressRecord("FRA", "flag", now), true, now);
-    expect(isDue(r, new Date(now.getTime() + DAY / 2))).toBe(false);
-    expect(isDue(r, new Date(now.getTime() + DAY))).toBe(true);
+  it("loses strength after a lapse", () => {
+    let r = newProgressRecord("FRA", "flag", start);
+    r = applyAnswer(r, true, start);
+    r = applyAnswer(r, true, at(2));
+    r = applyAnswer(r, true, at(13));
+    const before = r.box;
+    r = applyAnswer(r, false, at(60));
+    expect(r.box).toBeLessThan(before);
+  });
+
+  it("migrates pre-FSRS Leitner records instead of resetting them", () => {
+    const legacy: ProgressRecord = { countryId: "FRA", category: "flag", box: 4, correctCount: 4, incorrectCount: 0, dueAt: at(0).toISOString(), lastReviewedAt: at(-16).toISOString() };
+    expect(recallProbability(legacy, at(0))).toBeCloseTo(0.9, 2); // box 4 ≈ 16-day stability
+    const next = applyAnswer(legacy, true, at(0));
+    expect(next.stability).toBeGreaterThan(16);
+    expect(next.box).toBe(MAX_BOX);
+  });
+
+  it("maps stability to strength levels", () => {
+    expect([0.2, 1, 2.3, 7, 20, 40].map(strengthLevel)).toEqual([0, 1, 1, 3, 4, 5]);
   });
 });
