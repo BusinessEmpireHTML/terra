@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { View } from "react-native";
 import {
+  BlendMode,
   Canvas,
   createPicture,
   PaintStyle,
@@ -11,7 +12,7 @@ import {
   type SkCanvas,
   type SkPathBuilder,
 } from "@shopify/react-native-skia";
-import { Easing, useDerivedValue, useSharedValue, withTiming } from "react-native-reanimated";
+import { cancelAnimation, Easing, useDerivedValue, useSharedValue, withDecay, withTiming } from "react-native-reanimated";
 import {
   GestureDetector,
   useCompetingGestures,
@@ -24,22 +25,41 @@ import { scheduleOnRN } from "react-native-worklets";
 import { COUNTRIES } from "../../data/countries";
 import { useTheme } from "../../theme/ThemeProvider";
 import { tapFeedback } from "../../utils/haptics";
-import { BORDERS, FEATURE_IDS, GRATICULE, hexToArgb, hitTest, MARKER_IDS, MARKER_XYZ, nearestAngle, rotationToCenter } from "./globeData";
-import { DENSITY_BREAKS, type GlobeProps } from "./globeTypes";
+import {
+  BORDERS,
+  FEATURE_IDS,
+  GRATICULE,
+  hexToArgb,
+  hitTest,
+  MARKER_IDS,
+  MARKER_XYZ,
+  nearestAngle,
+  RING_CAPS,
+  rotationToCenter,
+  screenToSphere,
+  solveAnchorRotation,
+} from "./globeData";
+import { DENSITY_BREAKS, POPULATION_BREAKS, type GlobeProps } from "./globeTypes";
 
 const COUNTRY_BY_ID = new Map(COUNTRIES.map((c) => [c.id, c]));
 const MIN_ZOOM = 0.7;
-const MAX_ZOOM = 2.6;
-const DRAG_DEGREES_PER_PX = 0.28;
+/** Deep enough that Luxembourg or Slovenia fills a fingertip. */
+const MAX_ZOOM = 12;
 const INITIAL_ROTATION = { lambda: -20, phi: -12 };
 const FLY_MS = 650;
+/** Friction for the spin that continues after a flick (closer to 1 = longer glide). */
+const FLICK_DECELERATION = 0.994;
+/** Soft fade at the viewport's edges, so a zoomed-in globe never ends in a hard box. */
+const EDGE_FADE = 28;
 /** Points slightly behind the limb still count as visible so outlines reach the edge without popping. */
 const HORIZON = -0.03;
 const DEG2RAD = Math.PI / 180;
+const RAD2DEG = 180 / Math.PI;
 
 /** Everything a frame needs besides the rotation, as plain numbers/arrays (cheap to hand to the UI thread). */
 interface FrameStyle {
-  size: number;
+  width: number;
+  height: number;
   radius: number;
   ocean: [number, number, number];
   accent: number;
@@ -49,7 +69,9 @@ interface FrameStyle {
   groupAlphas: number[];
   /** Per feature (FEATURE_IDS order): index into groupColors, or -1 for no fill. */
   featureGroup: number[];
+  /** Distinct marker colors, and each marker's index into them (markers are drawn one path per color). */
   markerColors: number[];
+  markerGroup: number[];
   /** Per marker (MARKER_IDS order): ARGB of a halo to draw, or 0 for none. */
   markerHalo: number[];
 }
@@ -62,8 +84,9 @@ type Pt = { x: number; y: number };
  * straddles the edge is clipped at the limb instead of being mirrored across
  * the face. Returns null when the whole ring is on the far side.
  */
-function projectClosed(xyz: number[], start: number, length: number, t: number[], R: number, cx: number, cy: number): Pt[] | null {
+function projectClosed(start: number, length: number, t: number[], R: number, cx: number, cy: number): Pt[] | null {
   "worklet";
+  const xyz = BORDERS.xyz;
   const [cosL, sinL, cosP, sinP] = t;
   const pts: Pt[] = new Array(length);
   let anyVisible = false;
@@ -93,8 +116,9 @@ function projectClosed(xyz: number[], start: number, length: number, t: number[]
 }
 
 /** Adds an open polyline (graticule), skipping hidden stretches so nothing is drawn across the globe. */
-function addOpenLine(builder: SkPathBuilder, xyz: number[], start: number, length: number, t: number[], R: number, cx: number, cy: number) {
+function addOpenLine(builder: SkPathBuilder, start: number, length: number, t: number[], R: number, cx: number, cy: number) {
   "worklet";
+  const xyz = GRATICULE.xyz;
   const [cosL, sinL, cosP, sinP] = t;
   let run: Pt[] = [];
   for (let k = 0; k < length; k++) {
@@ -116,15 +140,46 @@ function addOpenLine(builder: SkPathBuilder, xyz: number[], start: number, lengt
   if (run.length > 1) builder.addPoly(run, false);
 }
 
+/** Fades content toward the two edges along one axis (DstIn keeps the destination where the gradient is opaque). */
+function fadeEdges(canvas: SkCanvas, width: number, height: number, vertical: boolean) {
+  "worklet";
+  const length = vertical ? height : width;
+  const f = Math.min(0.45, EDGE_FADE / length);
+  const paint = Skia.Paint();
+  paint.setBlendMode(BlendMode.DstIn);
+  paint.setShader(
+    Skia.Shader.MakeLinearGradient(
+      { x: 0, y: 0 },
+      vertical ? { x: 0, y: height } : { x: width, y: 0 },
+      [Skia.Color(0x00000000), Skia.Color(0xff000000), Skia.Color(0xff000000), Skia.Color(0x00000000)],
+      [0, f, 1 - f, 1],
+      TileMode.Clamp
+    )
+  );
+  canvas.drawRect(Skia.XYWHRect(0, 0, width, height), paint);
+}
+
 /** Draws one frame of the globe. Runs on the UI thread (a worklet), so dragging never re-renders React. */
 function drawGlobe(canvas: SkCanvas, lambdaDeg: number, phiDeg: number, zoom: number, s: FrameStyle) {
   "worklet";
   const R = s.radius * zoom;
-  const cx = s.size / 2;
-  const cy = s.size / 2;
+  const cx = s.width / 2;
+  const cy = s.height / 2;
   const lam = lambdaDeg * DEG2RAD;
   const ph = phiDeg * DEG2RAD;
-  const t = [Math.cos(lam), Math.sin(lam), Math.cos(ph), Math.sin(ph)];
+  const cosL = Math.cos(lam);
+  const sinL = Math.sin(lam);
+  const cosP = Math.cos(ph);
+  const sinP = Math.sin(ph);
+  const t = [cosL, sinL, cosP, sinP];
+  // Direction toward the viewer in unrotated coordinates, for back-face culling.
+  const vx = cosP * sinL;
+  const vy = sinP;
+  const vz = cosP * cosL;
+
+  const fadeVertical = cy - R < EDGE_FADE || cy + R > s.height - EDGE_FADE;
+  const fadeHorizontal = cx - R < EDGE_FADE || cx + R > s.width - EDGE_FADE;
+  if (fadeVertical || fadeHorizontal) canvas.saveLayer();
 
   const fill = Skia.Paint();
   fill.setAntiAlias(true);
@@ -155,7 +210,7 @@ function drawGlobe(canvas: SkCanvas, lambdaDeg: number, phiDeg: number, zoom: nu
   // Graticule.
   const grat = Skia.PathBuilder.Make();
   for (let r = 0; r < GRATICULE.ringStart.length; r++) {
-    addOpenLine(grat, GRATICULE.xyz, GRATICULE.ringStart[r], GRATICULE.ringLength[r], t, R, cx, cy);
+    addOpenLine(grat, GRATICULE.ringStart[r], GRATICULE.ringLength[r], t, R, cx, cy);
   }
   stroke.setAlphaf(0.08);
   stroke.setStrokeWidth(0.5);
@@ -166,7 +221,27 @@ function drawGlobe(canvas: SkCanvas, lambdaDeg: number, phiDeg: number, zoom: nu
   const fills: SkPathBuilder[] = [];
   for (let g = 0; g < s.groupColors.length; g++) fills.push(Skia.PathBuilder.Make());
   for (let r = 0; r < BORDERS.ringStart.length; r++) {
-    const pts = projectClosed(BORDERS.xyz, BORDERS.ringStart[r], BORDERS.ringLength[r], t, R, cx, cy);
+    const ccx = RING_CAPS[r * 4];
+    const ccy = RING_CAPS[r * 4 + 1];
+    const ccz = RING_CAPS[r * 4 + 2];
+    const angle = RING_CAPS[r * 4 + 3];
+    if (angle < Math.PI / 2) {
+      const facing = ccx * vx + ccy * vy + ccz * vz;
+      const capSin = Math.sin(angle);
+      // Entirely behind the globe: skip without projecting anything.
+      if (facing < -capSin - 0.05) continue;
+      // Entirely in front: skip if its bounding circle is off-screen (matters when zoomed in).
+      if (facing > capSin + 0.05) {
+        const x1 = ccx * cosL - ccz * sinL;
+        const z1 = ccx * sinL + ccz * cosL;
+        const y2 = ccy * cosP - z1 * sinP;
+        const sx = cx - x1 * R;
+        const sy = cy - y2 * R;
+        const reach = 2 * Math.sin(angle / 2) * R + 2;
+        if (sx + reach < 0 || sx - reach > s.width || sy + reach < 0 || sy - reach > s.height) continue;
+      }
+    }
+    const pts = projectClosed(BORDERS.ringStart[r], BORDERS.ringLength[r], t, R, cx, cy);
     if (!pts) continue;
     outline.addPoly(pts, true);
     const g = s.featureGroup[BORDERS.ringFeature[r]];
@@ -182,11 +257,11 @@ function drawGlobe(canvas: SkCanvas, lambdaDeg: number, phiDeg: number, zoom: nu
   stroke.setStrokeWidth(0.75);
   canvas.drawPath(outline.detach(), stroke);
 
-  // Markers at each country's centroid.
-  const [cosL, sinL, cosP, sinP] = t;
-  stroke.setColor(Skia.Color(s.background));
-  stroke.setAlphaf(1);
-  for (let m = 0; m < s.markerColors.length; m++) {
+  // Markers at each country's centroid, batched into one path per color plus one shared outline.
+  const markerR = 3.5 + Math.min(1.5, Math.max(0, zoom - 1) * 0.25);
+  const dots: (SkPathBuilder | null)[] = new Array(s.markerColors.length).fill(null);
+  const rings = Skia.PathBuilder.Make();
+  for (let m = 0; m < MARKER_IDS.length; m++) {
     const i = m * 3;
     const x = MARKER_XYZ[i];
     const y = MARKER_XYZ[i + 1];
@@ -198,23 +273,47 @@ function drawGlobe(canvas: SkCanvas, lambdaDeg: number, phiDeg: number, zoom: nu
     if (z2 <= HORIZON) continue;
     const mx = cx - x1 * R;
     const my = cy - y2 * R;
+    if (mx < -12 || mx > s.width + 12 || my < -12 || my > s.height + 12) continue;
     const halo = s.markerHalo[m];
+    const r = halo !== 0 ? markerR + 2 : markerR;
     if (halo !== 0) {
       fill.setColor(Skia.Color(halo));
       fill.setAlphaf(0.28);
       canvas.drawCircle(mx, my, 12, fill);
     }
-    const r = halo !== 0 ? 5.5 : 3.5;
-    fill.setColor(Skia.Color(s.markerColors[m]));
+    const g = s.markerGroup[m];
+    let dot = dots[g];
+    if (!dot) {
+      dot = Skia.PathBuilder.Make();
+      dots[g] = dot;
+    }
+    dot.addCircle(mx, my, r);
+    rings.addCircle(mx, my, r);
+  }
+  fill.setAlphaf(1);
+  for (let g = 0; g < dots.length; g++) {
+    const dot = dots[g];
+    if (!dot) continue;
+    fill.setColor(Skia.Color(s.markerColors[g]));
     fill.setAlphaf(0.95);
-    canvas.drawCircle(mx, my, r, fill);
-    stroke.setStrokeWidth(0.75);
-    canvas.drawCircle(mx, my, r, stroke);
+    canvas.drawPath(dot.detach(), fill);
+  }
+  stroke.setColor(Skia.Color(s.background));
+  stroke.setAlphaf(1);
+  stroke.setStrokeWidth(0.75);
+  canvas.drawPath(rings.detach(), stroke);
+
+  if (fadeVertical || fadeHorizontal) {
+    if (fadeVertical) fadeEdges(canvas, s.width, s.height, true);
+    if (fadeHorizontal) fadeEdges(canvas, s.width, s.height, false);
+    canvas.restore();
   }
 }
 
 export default function GlobeCanvas({
   size,
+  width: widthProp,
+  height: heightProp,
   layer = "political",
   focusedCountryId,
   masteryByCca3,
@@ -225,11 +324,20 @@ export default function GlobeCanvas({
 }: GlobeProps) {
   const { colors } = useTheme();
   const radius = size / 2;
+  const width = widthProp ?? size;
+  const height = heightProp ?? size;
+  const cx = width / 2;
+  const cy = height / 2;
 
   const lambda = useSharedValue(INITIAL_ROTATION.lambda);
   const phi = useSharedValue(INITIAL_ROTATION.phi);
   const zoom = useSharedValue(1);
   const savedZoom = useSharedValue(1);
+  /** Sphere point under the dragging finger (null when the finger is off the globe). */
+  const dragAnchor = useSharedValue<[number, number, number] | null>(null);
+  /** Sphere point under the pinch's focal point, kept there while zooming. */
+  const pinchAnchor = useSharedValue<[number, number, number] | null>(null);
+  const pinching = useSharedValue(false);
 
   // ---- Colors for this render (recomputed only when data/theme change) ----
   const style = useMemo<FrameStyle>(() => {
@@ -239,37 +347,44 @@ export default function GlobeCanvas({
     const groupColors = [...scale, highlightColor.correct, highlightColor.wrong];
     const groupAlphas = [0.65, 0.65, 0.65, 0.65, 0.65, 0.8, 0.8];
     const HIGHLIGHT_GROUP = { correct: 5, wrong: 6 } as const;
+    const bucket = (value: number, breaks: readonly number[]) => {
+      const i = breaks.findIndex((limit) => value < limit);
+      return i === -1 ? breaks.length : i;
+    };
 
     const featureGroup = FEATURE_IDS.map((id) => {
       const highlight = highlights?.[id];
       if (highlight) return HIGHLIGHT_GROUP[highlight];
-      if (layer === "density") {
-        const c = COUNTRY_BY_ID.get(id);
-        if (!c?.population || !c.areaKm2) return -1;
-        const d = c.population / c.areaKm2;
-        const bucket = DENSITY_BREAKS.findIndex((limit) => d < limit);
-        return bucket === -1 ? DENSITY_BREAKS.length : bucket;
-      }
+      const c = COUNTRY_BY_ID.get(id);
+      if (layer === "population") return c?.population ? bucket(c.population, POPULATION_BREAKS) : -1;
+      if (layer === "density") return c?.population && c.areaKm2 ? bucket(c.population / c.areaKm2, DENSITY_BREAKS) : -1;
       if (layer === "mastery") {
         // Unlit until practiced, then warming up through the scale as the score rises.
         const score = masteryByCca3?.get(id) ?? 0;
-        if (score <= 0) return -1;
-        return Math.min(4, Math.floor(score / 20));
+        return score <= 0 ? -1 : Math.min(4, Math.floor(score / 20));
       }
       return -1;
     });
 
-    const markerColors = MARKER_IDS.map((id) => hexToArgb(COUNTRY_BY_ID.get(id)?.accentColor ?? colors.accent));
+    const markerColorOf = (id: string) => hexToArgb(COUNTRY_BY_ID.get(id)?.accentColor ?? colors.accent);
+    const markerColors: number[] = [];
+    const markerGroup = MARKER_IDS.map((id) => {
+      const color = markerColorOf(id);
+      let g = markerColors.indexOf(color);
+      if (g === -1) g = markerColors.push(color) - 1;
+      return g;
+    });
     const markerHalo = MARKER_IDS.map((id) => {
       const highlight = highlights?.[id];
       // Microstates have no outline to fill, so a highlight shows as a halo instead.
       if (highlight && !COUNTRY_BY_ID.get(id)?.hasBorderGeometry) return highlightColor[highlight];
-      if (id === focusedCountryId) return markerColors[MARKER_IDS.indexOf(id)];
+      if (id === focusedCountryId) return markerColorOf(id);
       return 0;
     });
 
     return {
-      size,
+      width,
+      height,
       radius,
       ocean: [hexToArgb(colors.globeHighlight), hexToArgb(colors.globeBase), hexToArgb(colors.globeEdge)],
       accent: hexToArgb(colors.accent),
@@ -279,13 +394,14 @@ export default function GlobeCanvas({
       groupAlphas,
       featureGroup,
       markerColors,
+      markerGroup,
       markerHalo,
     };
-  }, [colors, layer, masteryByCca3, highlights, focusedCountryId, size, radius]);
+  }, [colors, layer, masteryByCca3, highlights, focusedCountryId, width, height, radius]);
 
   const picture = useDerivedValue(
-    () => createPicture((canvas) => drawGlobe(canvas, lambda.value, phi.value, zoom.value, style), { width: size, height: size }),
-    [style, size]
+    () => createPicture((canvas) => drawGlobe(canvas, lambda.value, phi.value, zoom.value, style), { width, height }),
+    [style, width, height]
   );
 
   // ---- Fly-to ----
@@ -320,7 +436,7 @@ export default function GlobeCanvas({
 
   const handleTap = useCallback(
     (x: number, y: number, l: number, p: number, z: number) => {
-      const hit = hitTest(x, y, { rotation: { lambda: l, phi: p }, radius: radius * z, cx: radius, cy: radius });
+      const hit = hitTest(x, y, { rotation: { lambda: l, phi: p }, radius: radius * z, cx, cy });
       if (onTapRef.current) {
         onTapRef.current(hit);
         return;
@@ -332,34 +448,89 @@ export default function GlobeCanvas({
       if (selectTimer.current) clearTimeout(selectTimer.current);
       selectTimer.current = setTimeout(() => onSelectRef.current?.(id), 380);
     },
-    [radius, flyTo]
+    [radius, cx, cy, flyTo]
   );
 
   // ---- Gestures (callbacks are UI-thread worklets) ----
   const pan = usePanGesture({
-    minDistance: 3,
+    minDistance: 2,
+    maxPointers: 1,
+    onBegin: (e) => {
+      "worklet";
+      // Touching the globe stops any glide or fly-to, and grabs the point under the finger.
+      cancelAnimation(lambda);
+      cancelAnimation(phi);
+      const R = radius * zoom.value;
+      dragAnchor.value = screenToSphere((e.x - cx) / R, (e.y - cy) / R, lambda.value, phi.value);
+    },
     onUpdate: (e) => {
       "worklet";
-      // The surface follows the finger (drag right → the globe turns right,
-      // drag down → it tips down), slowed when zoomed in so it keeps tracking.
-      const k = DRAG_DEGREES_PER_PX / zoom.value;
+      if (pinching.value) return;
+      const R = radius * zoom.value;
+      const u = (e.x - cx) / R;
+      const v = (e.y - cy) / R;
+      const grabbed = dragAnchor.value;
+      if (grabbed) {
+        // Keep the grabbed spot exactly under the finger.
+        const rot = solveAnchorRotation(grabbed, u, v, lambda.value, phi.value);
+        if (rot) {
+          lambda.value = rot[0];
+          phi.value = rot[1];
+          return;
+        }
+      }
+      // Finger off the globe (or past the pole limit): rotate by the movement instead…
+      const k = RAD2DEG / R;
       lambda.value += e.changeX * k;
       phi.value = Math.max(-80, Math.min(80, phi.value + e.changeY * k));
+      // …and grab again as soon as the finger is back over the globe.
+      dragAnchor.value = screenToSphere(u, v, lambda.value, phi.value);
+    },
+    onDeactivate: (e) => {
+      "worklet";
+      if (pinching.value) return;
+      // A flick keeps the globe turning, slowing down like a real one.
+      const k = RAD2DEG / (radius * zoom.value);
+      lambda.value = withDecay({ velocity: e.velocityX * k, deceleration: FLICK_DECELERATION });
+      phi.value = withDecay({ velocity: e.velocityY * k, deceleration: FLICK_DECELERATION, clamp: [-80, 80] });
     },
   });
   const pinch = usePinchGesture({
+    onBegin: () => {
+      "worklet";
+      cancelAnimation(lambda);
+      cancelAnimation(phi);
+    },
+    onActivate: (e) => {
+      "worklet";
+      pinching.value = true;
+      savedZoom.value = zoom.value;
+      const R = radius * zoom.value;
+      pinchAnchor.value = screenToSphere((e.focalX - cx) / R, (e.focalY - cy) / R, lambda.value, phi.value);
+    },
     onUpdate: (e) => {
       "worklet";
       zoom.value = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, savedZoom.value * e.scale));
+      // Zoom toward the fingers: the spot between them stays put (two-finger drags pan, too).
+      const grabbed = pinchAnchor.value;
+      if (!grabbed) return;
+      const R = radius * zoom.value;
+      const rot = solveAnchorRotation(grabbed, (e.focalX - cx) / R, (e.focalY - cy) / R, lambda.value, phi.value);
+      if (rot) {
+        lambda.value = rot[0];
+        phi.value = rot[1];
+      }
     },
-    onDeactivate: () => {
+    onFinalize: () => {
       "worklet";
+      pinching.value = false;
       savedZoom.value = zoom.value;
+      dragAnchor.value = null; // a finger left on screen re-grabs on its next move
     },
   });
   const tap = useTapGesture({
     maxDuration: 280,
-    maxDistance: 8,
+    maxDistance: 10,
     onActivate: (e) => {
       "worklet";
       scheduleOnRN(handleTap, e.x, e.y, lambda.value, phi.value, zoom.value);
@@ -370,7 +541,7 @@ export default function GlobeCanvas({
   return (
     <GestureDetector gesture={gesture}>
       <View
-        style={{ width: size, height: size }}
+        style={{ width, height }}
         accessible
         accessibilityRole="image"
         accessibilityLabel="Interactive globe"
@@ -380,7 +551,7 @@ export default function GlobeCanvas({
             : "Drag to rotate, pinch to zoom, and tap a country to open it. Use the search button to find a country by name."
         }
       >
-        <Canvas style={{ width: size, height: size }}>
+        <Canvas style={{ width, height }}>
           <Picture picture={picture} />
         </Canvas>
       </View>

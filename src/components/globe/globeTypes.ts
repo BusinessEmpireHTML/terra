@@ -2,7 +2,10 @@ import type { GlobeHit } from "./globeData";
 
 export type { GlobeHit };
 
-export type GlobeLayer = "political" | "density" | "mastery";
+export type GlobeLayer = "political" | "population" | "density" | "mastery";
+
+/** Total-population buckets for the population layer (and its legend on the home screen). */
+export const POPULATION_BREAKS = [1_000_000, 10_000_000, 50_000_000, 200_000_000] as const;
 
 /** People per km² buckets used by the density layer (and its legend on the home screen). */
 export const DENSITY_BREAKS = [10, 50, 150, 400] as const;
@@ -11,7 +14,11 @@ export const DENSITY_BREAKS = [10, 50, 150, 400] as const;
 export type GlobeHighlight = "correct" | "wrong";
 
 export interface GlobeProps {
+  /** Diameter of the globe at normal zoom. */
   size: number;
+  /** Visible area; defaults to a size×size square. Make it wider/taller than the globe so zooming in fills it instead of hitting a box. */
+  width?: number;
+  height?: number;
   layer?: GlobeLayer;
   /** Draws a halo around this country's marker. */
   focusedCountryId?: string | null;
