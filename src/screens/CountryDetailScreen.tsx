@@ -10,6 +10,7 @@ import { useTheme } from "../theme/ThemeProvider";
 import { fontFamily } from "../theme/tokens";
 import { useAppStore } from "../store/useAppStore";
 import { formatCompactNumber, formatLatLng } from "../utils/geo";
+import { areaComparison, densityComparison, populationRank } from "../utils/countryStats";
 import { FactPill, SectionHeader, ComingSoonCard, AnimatedPressable, PrimaryButton } from "../components/ui/Primitives";
 import { DishGrid, HistoryTimeline, LandmarkList, ParagraphBlock, ReligionBreakdown } from "../components/country/ContentSections";
 import { progressStore } from "../services/progressStore";
@@ -32,7 +33,7 @@ function describeNextReview(dueAt: number): string {
 function densityLabel(country: Country): string {
   if (!country.population || !country.areaKm2) return "—";
   const d = country.population / country.areaKm2;
-  return `${d >= 100 ? Math.round(d).toLocaleString("en-US") : d.toFixed(1)}/km²`;
+  return `${d >= 100 ? Math.round(d).toLocaleString("en-US") : d.toFixed(1)} people per km²`;
 }
 
 export default function CountryDetailScreen({ cca3 }: { cca3: string }) {
@@ -156,15 +157,16 @@ export default function CountryDetailScreen({ cca3 }: { cca3: string }) {
           <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" }}>
             <FactPill
               label="Population"
-              value={`${formatCompactNumber(country.population)}${country.populationYear ? ` ('${String(country.populationYear).slice(2)})` : ""}`}
+              value={formatCompactNumber(country.population)}
+              note={populationRank(country.id) ? `#${populationRank(country.id)} of ${COUNTRIES.length} countries${country.populationYear ? ` (${country.populationYear})` : ""}` : null}
             />
-            <FactPill label="Area" value={country.areaKm2 ? `${formatCompactNumber(country.areaKm2)} km²` : "—"} />
-            <FactPill label="Density" value={densityLabel(country)} />
-            <FactPill label="Location" value={formatLatLng(lat, lng)} />
+            <FactPill label="Area" value={country.areaKm2 ? `${country.areaKm2.toLocaleString("en-US")} km²` : "—"} note={areaComparison(country.id)} />
+            <FactPill label="Density" value={densityLabel(country)} note={densityComparison(country.id)} />
+            <FactPill label="Location" value={formatLatLng(lat, lng)} note={country.landlocked ? "Landlocked — no coastline" : null} />
             <FactPill label="Languages" value={country.languages?.join(", ") || "—"} />
             <FactPill label="Currency" value={country.currencies?.map((c) => c.name).join(", ") || "—"} />
             <FactPill label="Calling code" value={country.callingCode || "—"} />
-            <FactPill label="Internet TLD" value={country.tld?.join(", ") || "—"} />
+            <FactPill label="Internet TLD" value={country.tld?.join(", ") || "—"} wide />
           </View>
 
           {country.funFact && (
