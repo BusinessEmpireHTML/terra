@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, { FadeOut } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { DENSITY_BREAKS, Globe, type GlobeLayer } from "../components/globe/Globe";
+import { Globe, type GlobeLayer } from "../components/globe/Globe";
+import { MapLegend } from "../components/globe/MapLegend";
 import { CountrySearchSheet } from "../components/search/CountrySearchSheet";
 import { GradientBackground } from "../components/ui/Primitives";
 import { useTheme } from "../theme/ThemeProvider";
@@ -15,13 +16,11 @@ import { computeAllMastery } from "../quiz/mastery";
 import type { Country } from "../types/country";
 
 const LAYERS: { key: GlobeLayer; label: string }[] = [
-  { key: "political", label: "Political" },
-  { key: "density", label: "Population" },
+  { key: "political", label: "Borders" },
+  { key: "population", label: "Population" },
+  { key: "density", label: "Density" },
   { key: "mastery", label: "Mastery" },
 ];
-
-const DENSITY_LEGEND = [`<${DENSITY_BREAKS[0]}/km²`, ...DENSITY_BREAKS.slice(1).map((b) => `<${b}`), `${DENSITY_BREAKS[DENSITY_BREAKS.length - 1]}+`];
-const MASTERY_LEGEND = ["Started", "", "", "", "Mastered"];
 const COUNTRY_BY_ID = new Map(COUNTRIES.map((c) => [c.id, c]));
 
 export default function HomeScreen() {
@@ -33,10 +32,7 @@ export default function HomeScreen() {
   const [masteryByCca3, setMasteryByCca3] = useState<Map<string, number>>(new Map());
   const recents = useAppStore((s) => s.recents);
 
-  const { width, height } = useWindowDimensions();
-  // Bounded by both axes so short/small screens (or landscape) can't push
-  // the fixed-size globe into the header or the recents row below it.
-  const globeSize = Math.min(width - 32, height * 0.42, 420);
+  const [area, setArea] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
     const t = setTimeout(() => setShowHint(false), 4500);
@@ -104,7 +100,13 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
-        <View accessibilityRole="radiogroup" style={{ flexDirection: "row", justifyContent: "center", gap: space.sm, marginBottom: space.sm, marginTop: space.sm }}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          accessibilityRole="radiogroup"
+          style={{ flexGrow: 0, marginTop: space.sm, marginBottom: space.sm }}
+          contentContainerStyle={{ gap: space.sm, paddingHorizontal: space.lg, flexGrow: 1, justifyContent: "center" }}
+        >
           {LAYERS.map((l) => {
             const active = layer === l.key;
             return (
@@ -116,71 +118,41 @@ export default function HomeScreen() {
                 accessibilityLabel={`${l.label} map layer`}
                 style={{
                   paddingVertical: 6,
-                  paddingHorizontal: 14,
+                  paddingHorizontal: 12,
                   borderRadius: 999,
                   backgroundColor: active ? colors.accent : "transparent",
                   borderWidth: 1,
                   borderColor: active ? colors.accent : colors.border,
                 }}
               >
-                <Text style={[type.label, { color: active ? colors.background : colors.textMuted }]}>
-                  {l.label.toUpperCase()}
-                </Text>
+                <Text style={[type.label, { color: active ? colors.background : colors.textMuted }]}>{l.label.toUpperCase()}</Text>
               </Pressable>
             );
           })}
-        </View>
+        </ScrollView>
 
-        {layer === "density" && (
-          <View style={{ flexDirection: "row", justifyContent: "center", gap: space.md, marginBottom: space.xs }}>
-            {DENSITY_LEGEND.map((label, i) => (
-              <View key={label} style={{ flexDirection: "row", alignItems: "center" }}>
-                <View
-                  style={{
-                    width: 7,
-                    height: 7,
-                    borderRadius: 3.5,
-                    backgroundColor: colors.densityScale[i],
-                    marginRight: 4,
-                    borderWidth: i === 0 ? StyleSheet.hairlineWidth : 0,
-                    borderColor: colors.border,
-                  }}
-                />
-                <Text style={[type.label, { color: colors.textMuted, fontSize: 10 }]}>{label}</Text>
-              </View>
-            ))}
-          </View>
-        )}
+        <MapLegend layer={layer} />
 
-        {layer === "mastery" && (
-          <View style={{ flexDirection: "row", justifyContent: "center", gap: space.md, marginBottom: space.xs }}>
-            {MASTERY_LEGEND.map((label, i) =>
-              label ? (
-                <View key={i} style={{ flexDirection: "row", alignItems: "center" }}>
-                  <View
-                    style={{
-                      width: 7,
-                      height: 7,
-                      borderRadius: 3.5,
-                      backgroundColor: colors.densityScale[i],
-                      marginRight: 4,
-                    }}
-                  />
-                  <Text style={[type.label, { color: colors.textMuted, fontSize: 10 }]}>{label}</Text>
-                </View>
-              ) : null
-            )}
-          </View>
-        )}
-
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          <Globe size={globeSize} layer={layer} masteryByCca3={masteryByCca3} onSelectCountry={goToCountry} />
+        {/* The globe gets every pixel between the controls and the recents row, edge to edge, so zooming in fills the view. */}
+        <View style={{ flex: 1 }} onLayout={(e) => setArea({ width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height })}>
+          {area.height > 0 && (
+            <Globe
+              size={Math.min(area.width - 32, area.height - 16, 460)}
+              width={area.width}
+              height={area.height}
+              layer={layer}
+              masteryByCca3={masteryByCca3}
+              onSelectCountry={goToCountry}
+            />
+          )}
 
           {showHint && (
-            <Animated.View exiting={FadeOut.duration(400)} style={{ position: "absolute", bottom: space.sm, alignItems: "center" }}>
-              <Text style={[type.bodySmall, { color: colors.textMuted }]}>
-                Drag to rotate · Pinch to zoom · Tap a country
-              </Text>
+            <Animated.View
+              exiting={FadeOut.duration(400)}
+              pointerEvents="none"
+              style={{ position: "absolute", bottom: space.sm, left: 0, right: 0, alignItems: "center" }}
+            >
+              <Text style={[type.bodySmall, { color: colors.textMuted }]}>Drag to rotate · Pinch to zoom · Tap a country</Text>
             </Animated.View>
           )}
         </View>
