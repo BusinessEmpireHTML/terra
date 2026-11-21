@@ -204,22 +204,17 @@ export default function LearnScreen() {
             </View>
           </AnimatedPressable>
 
-          <AnimatedPressable
-            onPress={() => router.push("/quiz/locate")}
-            accessibilityLabel="Find it on the globe: tap where each country is"
+          <View
+            style={{
+              backgroundColor: colors.surfaceRaised,
+              borderRadius: radius.lg,
+              borderWidth: 1,
+              borderColor: colors.accentSecondary,
+              padding: space.md,
+              marginBottom: space.lg,
+            }}
           >
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                backgroundColor: colors.surfaceRaised,
-                borderRadius: radius.lg,
-                borderWidth: 1,
-                borderColor: colors.accentSecondary,
-                padding: space.md,
-                marginBottom: space.lg,
-              }}
-            >
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
               <View
                 style={{
                   width: 44,
@@ -237,9 +232,34 @@ export default function LearnScreen() {
                 <Text style={[type.body, { color: colors.textPrimary, fontFamily: fontFamily.bodySemiBold }]}>Find it on the globe</Text>
                 <Text style={[type.bodySmall, { color: colors.textMuted, marginTop: 2 }]}>No multiple choice — tap where each country is</Text>
               </View>
-              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
             </View>
-          </AnimatedPressable>
+            <View style={{ flexDirection: "row", gap: space.sm, marginTop: space.md }}>
+              {[
+                { label: "10 rounds", icon: "flag-outline" as const, href: "/quiz/locate" as const, hint: "Ten countries, then your score" },
+                { label: "Endless", icon: "infinite" as const, href: "/find-endless" as const, hint: "Keep going as long as you like; your best streak is saved" },
+              ].map((mode) => (
+                <AnimatedPressable
+                  key={mode.label}
+                  onPress={() => router.push(mode.href)}
+                  accessibilityLabel={`Find it on the globe, ${mode.label}`}
+                  accessibilityHint={mode.hint}
+                  containerStyle={{ flex: 1 }}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 6,
+                    paddingVertical: space.sm,
+                    borderRadius: radius.md,
+                    backgroundColor: colors.accentSecondary,
+                  }}
+                >
+                  <Ionicons name={mode.icon} size={16} color="#fff" />
+                  <Text style={[type.bodySmall, { color: "#fff", fontFamily: fontFamily.bodySemiBold }]}>{mode.label}</Text>
+                </AnimatedPressable>
+              ))}
+            </View>
+          </View>
 
           <Text style={[type.section, { color: colors.textMuted, marginBottom: space.sm }]}>MODES</Text>
           <View style={{ gap: space.sm }}>

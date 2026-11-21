@@ -34,6 +34,9 @@ export function LocateCard({ question, answered, onSelect }: Props) {
   const { colors, type, space, radius } = useTheme();
   const { width, height } = useWindowDimensions();
   const size = Math.min(width - space.lg * 2, height * 0.46, 460);
+  // The globe's view spans the full screen width (taller than the globe too),
+  // so zooming in fills the space instead of stopping at a box.
+  const viewHeight = Math.min(size + space.xl, height * 0.52);
   const target = COUNTRY_BY_ID.get(question.countryId)!;
   const [tap, setTap] = useState<TapResult | null>(null);
 
@@ -78,7 +81,7 @@ export function LocateCard({ question, answered, onSelect }: Props) {
 
   return (
     <View style={{ flex: 1 }}>
-      <View style={{ alignItems: "center", marginBottom: space.sm }}>
+      <View style={{ alignItems: "center", marginBottom: space.xs, paddingHorizontal: space.lg }}>
         <Text style={[type.label, { color: colors.textMuted }]}>FIND IT ON THE GLOBE</Text>
         <Text accessibilityRole="header" style={[type.title, { color: colors.textPrimary, textAlign: "center", marginTop: 4 }]}>
           {target.name.common}
@@ -90,9 +93,14 @@ export function LocateCard({ question, answered, onSelect }: Props) {
         )}
       </View>
 
-      <View style={{ alignItems: "center" }}>
-        <Globe size={size} highlights={highlights} flyToCountryId={answered ? target.id : null} onTap={handleTap} />
-      </View>
+      <Globe
+        size={size}
+        width={width}
+        height={viewHeight}
+        highlights={highlights}
+        flyToCountryId={answered ? target.id : null}
+        onTap={handleTap}
+      />
 
       {!answered && (
         <Pressable
@@ -100,7 +108,7 @@ export function LocateCard({ question, answered, onSelect }: Props) {
           accessibilityRole="button"
           accessibilityLabel={`Show me where ${target.name.common} is`}
           hitSlop={8}
-          style={{ alignSelf: "center", marginTop: space.md, paddingVertical: space.xs, paddingHorizontal: space.md }}
+          style={{ alignSelf: "center", marginTop: space.sm, paddingVertical: space.xs, paddingHorizontal: space.md }}
         >
           <Text style={[type.bodySmall, { color: colors.textMuted, textDecorationLine: "underline" }]}>I don't know — show me</Text>
         </Pressable>
@@ -110,7 +118,8 @@ export function LocateCard({ question, answered, onSelect }: Props) {
         <View
           accessibilityLiveRegion="polite"
           style={{
-            marginTop: space.md,
+            marginTop: space.sm,
+            marginHorizontal: space.lg,
             padding: space.md,
             borderRadius: radius.md,
             backgroundColor: colors.surfaceRaised,

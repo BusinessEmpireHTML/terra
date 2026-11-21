@@ -179,7 +179,7 @@ export default function QuizSessionScreen({ filter, focusCountryId, expeditionId
         {currentQuestion &&
           (currentQuestion.promptVisual === "globe" ? (
             // No ScrollView here: a vertical drag must rotate the globe, not scroll the page.
-            <View style={{ flex: 1, paddingHorizontal: space.lg, paddingTop: space.md }}>
+            <View style={{ flex: 1, paddingTop: space.md }}>
               <LocateCard question={currentQuestion} answered={answered} onSelect={submitAnswer} />
             </View>
           ) : (
