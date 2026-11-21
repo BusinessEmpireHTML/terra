@@ -43,10 +43,10 @@ export default function FindEndlessScreen() {
             🧭
           </Text>
           <Text style={[type.hero, { color: colors.textPrimary, marginTop: space.md, fontSize: 32 }]}>
-            {game.found} / {game.attempts}
+            {game.points} points
           </Text>
           <Text style={[type.body, { color: colors.textMuted, marginTop: 4, textAlign: "center" }]}>
-            countries found{game.xpEarned > 0 ? ` · +${game.xpEarned} XP` : ""}
+            {game.found} of {game.attempts} countries found{game.xpEarned > 0 ? ` · +${game.xpEarned} XP` : ""}
           </Text>
           <Text style={[type.body, { color: colors.textSecondary, marginTop: space.md, textAlign: "center" }]}>
             Longest streak this run: {game.runBest}
@@ -80,9 +80,10 @@ export default function FindEndlessScreen() {
 
         <View
           accessible
-          accessibilityLabel={`Found ${game.found}. Streak ${game.streak}. Best ${game.bestEver}.`}
+          accessibilityLabel={`${game.points} points. Found ${game.found}. Streak ${game.streak}. Best ${game.bestEver}.`}
           style={{ flexDirection: "row", justifyContent: "center", gap: space.lg, marginTop: space.sm }}
         >
+          <Stat label="POINTS" value={game.points} highlight />
           <Stat label="FOUND" value={game.found} />
           <Stat label="STREAK" value={game.streak} highlight={game.streak > 0 && game.streak >= game.bestEver} />
           <Stat label="BEST" value={game.bestEver} />

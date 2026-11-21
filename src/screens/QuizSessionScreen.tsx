@@ -11,6 +11,7 @@ import { whenAnswersSaved } from "../quiz/answerRecorder";
 import { QUIZ_CATEGORIES } from "../quiz/types";
 import { DEFAULT_SESSION_LENGTH, type CategoryFilter } from "../quiz/sessionBuilder";
 import { dailyNumber, type DailyAnswer } from "../quiz/daily";
+import { LOCATE_MAX_POINTS } from "../quiz/locateHints";
 import { DailyResultCard } from "../components/quiz/DailyResultCard";
 import { localDateString } from "../gamification/streaks";
 import { dailyStore } from "../services/dailyStore";
@@ -122,6 +123,10 @@ export default function QuizSessionScreen({ filter, focusCountryId, expeditionId
   }
 
   const percent = total ? Math.round((correctCount / total) * 100) : 0;
+  // Find it questions score 3/2/1/0 points by try; show the total when a session had any.
+  const scored = results.filter((r) => r.points != null);
+  const pointsEarned = scored.reduce((sum, r) => sum + (r.points ?? 0), 0);
+  const pointsPossible = scored.length * LOCATE_MAX_POINTS;
   const progress = total ? (index + (answered ? 1 : 0)) / total : 0;
 
   return (
@@ -209,6 +214,11 @@ export default function QuizSessionScreen({ filter, focusCountryId, expeditionId
                 <Text style={[type.body, { color: colors.textMuted, marginTop: 4 }]}>
                   {percent}% correct{xpEarned > 0 ? ` · +${xpEarned} XP` : ""}
                 </Text>
+                {pointsPossible > 0 && (
+                  <Text style={[type.label, { color: colors.accent, marginTop: space.sm, fontSize: 13 }]}>
+                    {pointsEarned} / {pointsPossible} POINTS
+                  </Text>
+                )}
               </>
             )}
             {newAchievements.length > 0 && (

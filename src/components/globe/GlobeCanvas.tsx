@@ -7,6 +7,7 @@ import {
   PaintStyle,
   Picture,
   Skia,
+  StrokeCap,
   StrokeJoin,
   TileMode,
   type SkCanvas,
@@ -74,6 +75,28 @@ interface FrameStyle {
   markerGroup: number[];
   /** Per marker (MARKER_IDS order): ARGB of a halo to draw, or 0 for none. */
   markerHalo: number[];
+  /** Wrong-guess dots as flat unit vectors, and the hint arrow as [from xyz, toward xyz] (empty when none). */
+  guessXYZ: number[];
+  arrowXYZ: number[];
+  guessColor: number;
+  arrowColor: number;
+}
+
+function lonLatToXYZ([lon, lat]: [number, number]): [number, number, number] {
+  const λ = lon * DEG2RAD;
+  const φ = lat * DEG2RAD;
+  return [Math.cos(φ) * Math.cos(λ), Math.sin(φ), Math.cos(φ) * Math.sin(λ)];
+}
+
+/** Rotates a unit vector into view: [screen x, screen y, depth (> 0 = facing us)]. */
+function toScreen(x: number, y: number, z: number, t: number[], R: number, cx: number, cy: number): [number, number, number] {
+  "worklet";
+  const [cosL, sinL, cosP, sinP] = t;
+  const x1 = x * cosL - z * sinL;
+  const z1 = x * sinL + z * cosL;
+  const y2 = y * cosP - z1 * sinP;
+  const z2 = y * sinP + z1 * cosP;
+  return [cx - x1 * R, cy - y2 * R, z2];
 }
 
 type Pt = { x: number; y: number };
@@ -303,6 +326,59 @@ function drawGlobe(canvas: SkCanvas, lambdaDeg: number, phiDeg: number, zoom: nu
   stroke.setStrokeWidth(0.75);
   canvas.drawPath(rings.detach(), stroke);
 
+  // Find it: dots where wrong guesses landed…
+  for (let i = 0; i < s.guessXYZ.length; i += 3) {
+    const [gx, gy, gz] = toScreen(s.guessXYZ[i], s.guessXYZ[i + 1], s.guessXYZ[i + 2], t, R, cx, cy);
+    if (gz <= HORIZON) continue;
+    fill.setColor(Skia.Color(s.guessColor));
+    fill.setAlphaf(1);
+    canvas.drawCircle(gx, gy, 6, fill);
+    stroke.setStrokeWidth(1.5);
+    canvas.drawCircle(gx, gy, 6, stroke);
+  }
+  // …and an arrow from the latest one, aimed along the shortest route to the answer.
+  if (s.arrowXYZ.length === 6) {
+    const a = s.arrowXYZ;
+    const [ax, ay, az] = toScreen(a[0], a[1], a[2], t, R, cx, cy);
+    const [bx, by] = toScreen(a[3], a[4], a[5], t, R, cx, cy);
+    const len = Math.hypot(bx - ax, by - ay);
+    if (az > HORIZON && len > 1e-6) {
+      const ux = (bx - ax) / len;
+      const uy = (by - ay) / len;
+      const nx = -uy;
+      const ny = ux;
+      const shaft = Skia.PathBuilder.Make();
+      shaft.moveTo(ax + ux * 10, ay + uy * 10);
+      shaft.lineTo(ax + ux * 42, ay + uy * 42);
+      const head = Skia.PathBuilder.Make();
+      head.addPoly(
+        [
+          { x: ax + ux * 56, y: ay + uy * 56 },
+          { x: ax + ux * 40 + nx * 8, y: ay + uy * 40 + ny * 8 },
+          { x: ax + ux * 40 - nx * 8, y: ay + uy * 40 - ny * 8 },
+        ],
+        true
+      );
+      const shaftPath = shaft.detach();
+      const headPath = head.detach();
+      // Dark underlay first, so the arrow reads on any background.
+      stroke.setStrokeCap(StrokeCap.Round);
+      stroke.setColor(Skia.Color(s.background));
+      stroke.setAlphaf(0.9);
+      stroke.setStrokeWidth(6);
+      canvas.drawPath(shaftPath, stroke);
+      stroke.setStrokeWidth(3);
+      canvas.drawPath(headPath, stroke);
+      stroke.setColor(Skia.Color(s.arrowColor));
+      stroke.setAlphaf(1);
+      stroke.setStrokeWidth(3);
+      canvas.drawPath(shaftPath, stroke);
+      fill.setColor(Skia.Color(s.arrowColor));
+      fill.setAlphaf(1);
+      canvas.drawPath(headPath, fill);
+    }
+  }
+
   if (fadeVertical || fadeHorizontal) {
     if (fadeVertical) fadeEdges(canvas, s.width, s.height, true);
     if (fadeHorizontal) fadeEdges(canvas, s.width, s.height, false);
@@ -318,6 +394,7 @@ export default function GlobeCanvas({
   focusedCountryId,
   masteryByCca3,
   highlights,
+  guesses,
   flyToCountryId,
   onSelectCountry,
   onTap,
@@ -382,7 +459,15 @@ export default function GlobeCanvas({
       return 0;
     });
 
+    const guessXYZ = (guesses ?? []).flatMap((g) => lonLatToXYZ(g.at));
+    const withArrow = [...(guesses ?? [])].reverse().find((g) => g.toward);
+    const arrowXYZ = withArrow?.toward ? [...lonLatToXYZ(withArrow.at), ...lonLatToXYZ(withArrow.toward)] : [];
+
     return {
+      guessXYZ,
+      arrowXYZ,
+      guessColor: hexToArgb(colors.ember),
+      arrowColor: hexToArgb(colors.accentBright),
       width,
       height,
       radius,
@@ -397,7 +482,7 @@ export default function GlobeCanvas({
       markerGroup,
       markerHalo,
     };
-  }, [colors, layer, masteryByCca3, highlights, focusedCountryId, width, height, radius]);
+  }, [colors, layer, masteryByCca3, highlights, guesses, focusedCountryId, width, height, radius]);
 
   const picture = useDerivedValue(
     () => createPicture((canvas) => drawGlobe(canvas, lambda.value, phi.value, zoom.value, style), { width, height }),

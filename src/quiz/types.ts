@@ -47,6 +47,15 @@ export interface AnswerResult {
   question: Question;
   chosenLabel: string;
   correct: boolean;
+  /** Find it only: how many taps it took (wrong ones included). */
+  attempts?: number;
+  /** Find it only: points earned (3/2/1 by try, 0 if not found). */
+  points?: number;
+}
+
+/** Extra detail a question card can report along with its answer. */
+export interface AnswerMeta {
+  attempts: number;
 }
 
 /** Spaced-repetition record for one (country, category) pair (FSRS; see srs.ts). */

@@ -65,9 +65,14 @@ export function newProgressRecord(countryId: string, category: QuizCategory, now
   };
 }
 
-/** Update a record after an answer. */
-export function applyAnswer(record: ProgressRecord, correct: boolean, now = new Date()): ProgressRecord {
-  const memory = nextMemoryState(memoryOf(record), elapsedWholeDays(record.lastReviewedAt, now), correct ? Rating.Good : Rating.Again);
+/**
+ * Update a record after an answer. `hard` marks a right answer that took a
+ * struggle (e.g. found on a second or third try): FSRS grades it "Hard", so
+ * it comes back sooner than a clean first-try answer.
+ */
+export function applyAnswer(record: ProgressRecord, correct: boolean, now = new Date(), hard = false): ProgressRecord {
+  const grade = !correct ? Rating.Again : hard ? Rating.Hard : Rating.Good;
+  const memory = nextMemoryState(memoryOf(record), elapsedWholeDays(record.lastReviewedAt, now), grade);
   const delayMs = correct ? nextIntervalDays(memory.stability, DESIRED_RETENTION, MAXIMUM_INTERVAL_DAYS) * DAY_MS : RELEARN_DELAY_MS;
 
   return {

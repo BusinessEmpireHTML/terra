@@ -67,8 +67,13 @@ export on every push to `main` and on every pull request.
   the countries with a usable outline at this map scale) and Neighbors (155;
   island nations have no land neighbors).
 - **Find it on the globe**: no multiple choice. You rotate the globe and
-  tap where the country is. The reveal flies to the answer, shows how far off
-  you were, and what the country borders. Tapping a country's marker always
+  tap where the country is, with **three tries** per country. Each miss says
+  how far away the country is (to its nearest edge) and which way, with a
+  compass and an arrow on the globe pointing along the shortest route.
+  Points drop with each wrong try: **3 / 2 / 1**, or 0 if you run out.
+  Finds that took more than one try are graded "Hard" for FSRS, so they come
+  back sooner. The reveal flies to the answer and says what the country
+  borders. Tapping a country's marker always
   counts, which keeps small countries fair, and "I don't know — show me" is
   there for anyone who can't (or won't) use the gesture. Play 10 rounds, or
   **Endless**: countries keep coming (due reviews first) while it tracks how
@@ -215,6 +220,9 @@ hand-written and never touched by the generator.
   India looked different. There are now separate Population and Density
   layers, each explained in plain words.
 - Endless mode for Find it.
+- Find it gives three tries per country, with distance-and-direction hints
+  after each miss and 3/2/1/0 points; re-tapping a country or spot you
+  already tried doesn't cost a try.
 
 ### Expo SDK 58, Skia globe, FSRS, Find it, shareable Daily (November 2026)
 

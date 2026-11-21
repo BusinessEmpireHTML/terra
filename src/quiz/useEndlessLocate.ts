@@ -5,7 +5,8 @@ import { recordAnswer } from "./answerRecorder";
 import { progressStore } from "../services/progressStore";
 import { storage } from "../services/storage";
 import { shuffle } from "../utils/random";
-import type { AnswerResult, Question } from "./types";
+import { locatePoints } from "./locateHints";
+import type { AnswerMeta, AnswerResult, Question } from "./types";
 
 /** Don't bring a country back until at least this many others have been asked. */
 const NO_REPEAT_WINDOW = 25;
@@ -28,6 +29,7 @@ export function useEndlessLocate() {
   const [bestEver, setBestEver] = useState(0);
   const [previousBest, setPreviousBest] = useState(0);
   const [xpEarned, setXpEarned] = useState(0);
+  const [points, setPoints] = useState(0);
 
   const draw = useCallback((): Question => {
     if (queue.current.length === 0) {
@@ -57,12 +59,14 @@ export function useEndlessLocate() {
   const answeredId = useRef<string | null>(null);
 
   const submit = useCallback(
-    (chosenLabel: string) => {
+    (chosenLabel: string, meta: AnswerMeta) => {
       if (!question || answered || answeredId.current === question.id) return;
       answeredId.current = question.id;
       const correct = question.choices[0].label === chosenLabel;
+      const earned = locatePoints(correct, meta.attempts);
       const nextStreak = correct ? streak + 1 : 0;
-      setAnswered({ question, chosenLabel, correct });
+      setAnswered({ question, chosenLabel, correct, attempts: meta.attempts, points: earned });
+      setPoints((p) => p + earned);
       setAttempts((n) => n + 1);
       if (correct) setFound((n) => n + 1);
       setStreak(nextStreak);
@@ -71,7 +75,7 @@ export function useEndlessLocate() {
         setBestEver(nextStreak);
         storage.saveFindBestStreak(nextStreak).catch(() => {});
       }
-      recordAnswer(question, correct)
+      recordAnswer(question, correct, { hard: correct && meta.attempts > 1 })
         .then((xp) => setXpEarned((x) => x + xp))
         .catch(() => {});
     },
@@ -83,5 +87,5 @@ export function useEndlessLocate() {
     setQuestion(draw());
   }, [draw]);
 
-  return { question, answered, found, attempts, streak, runBest, bestEver, isNewBest: runBest > previousBest, xpEarned, submit, next };
+  return { question, answered, found, attempts, points, streak, runBest, bestEver, isNewBest: runBest > previousBest, xpEarned, submit, next };
 }
