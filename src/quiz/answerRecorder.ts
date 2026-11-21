@@ -13,14 +13,14 @@ export const XP_NEW_PAIR_BONUS = 5;
 // computing stats or achievements.
 let queue: Promise<unknown> = Promise.resolve();
 
-async function persist(countryId: string, category: QuizCategory, correct: boolean): Promise<number> {
+async function persist(countryId: string, category: QuizCategory, correct: boolean, hard: boolean): Promise<number> {
   const now = new Date();
   const [existing, priorAttempts] = await Promise.all([
     progressStore.get(countryId, category),
     activityStore.countFor(countryId, category),
   ]);
   const base = existing ?? newProgressRecord(countryId, category, now);
-  await progressStore.upsert(applyAnswer(base, correct, now));
+  await progressStore.upsert(applyAnswer(base, correct, now, hard));
 
   const xpEarned = correct ? XP_CORRECT + (priorAttempts === 0 ? XP_NEW_PAIR_BONUS : 0) : 0;
   await activityStore.log({
@@ -34,9 +34,16 @@ async function persist(countryId: string, category: QuizCategory, correct: boole
   return xpEarned;
 }
 
-/** Saves one answer (SRS progress + activity/XP log). Resolves to the XP it earned. */
-export function recordAnswer(question: { countryId: string; category: QuizCategory }, correct: boolean): Promise<number> {
-  const task = queue.then(() => persist(question.countryId, question.category, correct));
+/**
+ * Saves one answer (SRS progress + activity/XP log). Resolves to the XP it
+ * earned. `hard` = right, but only after a struggle (graded Hard by FSRS).
+ */
+export function recordAnswer(
+  question: { countryId: string; category: QuizCategory },
+  correct: boolean,
+  options: { hard?: boolean } = {}
+): Promise<number> {
+  const task = queue.then(() => persist(question.countryId, question.category, correct, options.hard ?? false));
   queue = task.catch((err) => {
     if (__DEV__) console.warn("Failed to save answer:", err);
   });

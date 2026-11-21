@@ -4,6 +4,7 @@ const FAVORITES_KEY = "terra:favorites";
 const RECENTS_KEY = "terra:recents";
 
 const THEME_MODE_KEY = "terra:themeMode";
+const FIND_BEST_STREAK_KEY = "terra:findEndlessBestStreak";
 
 /** Parses a stored JSON string array, treating anything malformed as empty. */
 function parseStringArray(raw: string | null): string[] {
@@ -45,5 +46,15 @@ export const storage = {
 
   async saveThemeMode(mode: string): Promise<void> {
     await kv.setItemAsync(THEME_MODE_KEY, mode);
+  },
+
+  /** Longest streak ever reached in endless Find it. */
+  async loadFindBestStreak(): Promise<number> {
+    const n = Number(await kv.getItemAsync(FIND_BEST_STREAK_KEY));
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  },
+
+  async saveFindBestStreak(streak: number): Promise<void> {
+    await kv.setItemAsync(FIND_BEST_STREAK_KEY, String(streak));
   },
 };

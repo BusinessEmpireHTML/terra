@@ -140,13 +140,22 @@ export function FactRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-/** A quick-fact pill for grid layouts (population, area, etc.). */
-export function FactPill({ label, value }: { label: string; value: string }) {
+/**
+ * A quick-fact pill for grid layouts (population, area, etc.). Values wrap
+ * rather than truncate, and long ones (language lists, currency names) take
+ * the full row so nothing is ever cut off. An optional note puts the number
+ * in everyday terms.
+ */
+export function FactPill({ label, value, note, wide }: { label: string; value: string; note?: string | null; wide?: boolean }) {
   const { colors, type, space, radius } = useTheme();
+  const fullRow = wide ?? value.length > 15;
   return (
     <View
+      accessible
+      accessibilityLabel={`${label}: ${value}${note ? `. ${note}` : ""}`}
       style={{
-        flexBasis: "48%",
+        flexBasis: fullRow ? "100%" : "48%",
+        flexGrow: fullRow ? 1 : 0,
         backgroundColor: colors.surfaceRaised,
         borderRadius: radius.md,
         borderWidth: StyleSheet.hairlineWidth,
@@ -157,9 +166,8 @@ export function FactPill({ label, value }: { label: string; value: string }) {
       }}
     >
       <Text style={[type.label, { color: colors.accent, textTransform: "uppercase" }]}>{label}</Text>
-      <Text style={[type.data, { color: colors.textPrimary, marginTop: 2, fontSize: 16 }]} numberOfLines={1}>
-        {value}
-      </Text>
+      <Text style={[type.data, { color: colors.textPrimary, marginTop: 2, fontSize: 16, lineHeight: 21 }]}>{value}</Text>
+      {note ? <Text style={[type.bodySmall, { color: colors.textMuted, marginTop: 2, fontSize: 12, lineHeight: 16 }]}>{note}</Text> : null}
     </View>
   );
 }

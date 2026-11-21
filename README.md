@@ -44,12 +44,16 @@ export on every push to `main` and on every pull request.
   projection, the same trick antique globes and atlases use, drawn with
   React Native Skia. Gestures update shared values on the UI thread and a
   worklet re-projects the whole map into a single `SkPicture` each frame, so
-  dragging never re-renders React. Drag to rotate, pinch to zoom, and tap any
-  country (or its marker, for microstates) to fly there. Three layers:
-  **Political**, **Population density** and **Mastery**, where countries
-  light up as you learn them.
-- **Country pages** for all 194 countries: population (World Bank, 2025),
-  area, density, coordinates, languages, currencies, calling code, internet
+  dragging never re-renders React. The spot you grab stays under your finger,
+  a flick keeps it spinning, and pinching zooms toward your fingers, up to
+  12×, deep enough to tap Luxembourg. Tap any country (or its marker, for
+  microstates) to fly there. Four layers, each with a plain-language legend:
+  **Borders**, **Population** (how many people), **Density** (how crowded,
+  explained without assuming anyone knows what a km² looks like) and
+  **Mastery**, where countries light up as you learn them.
+- **Country pages** for all 194 countries, with the numbers put in everyday
+  terms ("about the size of Belgium", "more crowded than 93% of countries",
+  "#77 of 194"): population (World Bank, 2025), area, density, coordinates, languages, currencies, calling code, internet
   domain, land neighbors you can hop between, religious composition (Pew
   Research Center), plus hand-written history, culture, nature, food and
   landmarks, and a "did you know" for each.
@@ -63,10 +67,17 @@ export on every push to `main` and on every pull request.
   the countries with a usable outline at this map scale) and Neighbors (155;
   island nations have no land neighbors).
 - **Find it on the globe**: no multiple choice. You rotate the globe and
-  tap where the country is. The reveal flies to the answer, shows how far off
-  you were, and what the country borders. Tapping a country's marker always
+  tap where the country is, with **three tries** per country. Each miss says
+  how far away the country is (to its nearest edge) and which way, with a
+  compass and an arrow on the globe pointing along the shortest route.
+  Points drop with each wrong try: **3 / 2 / 1**, or 0 if you run out.
+  Finds that took more than one try are graded "Hard" for FSRS, so they come
+  back sooner. The reveal flies to the answer and says what the country
+  borders. Tapping a country's marker always
   counts, which keeps small countries fair, and "I don't know — show me" is
-  there for anyone who can't (or won't) use the gesture.
+  there for anyone who can't (or won't) use the gesture. Play 10 rounds, or
+  **Endless**: countries keep coming (due reviews first) while it tracks how
+  many you've found, your streak, and your best streak ever.
 - **Fair questions.** Exactly one choice is ever right: distractors never
   repeat, never include a currency the country *also* uses, a dish or
   landmark it shares with a neighbor, or a flag that looks identical at emoji
@@ -196,6 +207,22 @@ hand-written and never touched by the generator.
   compressed) the first time the globe is shown. Native apps don't.
 
 ## Changelog
+
+### Feedback round (November 2026)
+
+- Quick facts never truncate: long values wrap and take the full row, and
+  area, density and population get an everyday comparison.
+- Globe: zoom up to 12× (was 2.6×) toward your fingers; the grabbed point
+  stays under your finger; flicks glide; edges fade instead of ending in a
+  box; far-side and off-screen countries are skipped each frame (about 40%
+  less work at normal zoom, about 70% when zoomed in) and markers are batched.
+- The old "Population" layer actually showed density, which is why China and
+  India looked different. There are now separate Population and Density
+  layers, each explained in plain words.
+- Endless mode for Find it.
+- Find it gives three tries per country, with distance-and-direction hints
+  after each miss and 3/2/1/0 points; re-tapping a country or spot you
+  already tried doesn't cost a try.
 
 ### Expo SDK 58, Skia globe, FSRS, Find it, shareable Daily (November 2026)
 

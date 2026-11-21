@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { buildSession, type CategoryFilter, type SessionOptions } from "./sessionBuilder";
 import { recordAnswer } from "./answerRecorder";
-import type { AnswerResult, Question } from "./types";
+import { locatePoints } from "./locateHints";
+import type { AnswerMeta, AnswerResult, Question } from "./types";
 
 interface SessionState {
   loading: boolean;
@@ -51,17 +52,19 @@ export function useQuizSession(filter: CategoryFilter, options: SessionOptions =
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attempt]);
 
-  const submitAnswer = useCallback((chosenLabel: string) => {
+  const submitAnswer = useCallback((chosenLabel: string, meta?: AnswerMeta) => {
     const s = stateRef.current;
     const question = s.questions[s.index];
     if (!question || s.answered || answeredIndexRef.current === s.index) return;
     answeredIndexRef.current = s.index;
 
     const correct = question.choices.find((c) => c.label === chosenLabel)?.correct ?? false;
-    const result: AnswerResult = { question, chosenLabel, correct };
+    const attempts = meta?.attempts;
+    const result: AnswerResult =
+      attempts != null ? { question, chosenLabel, correct, attempts, points: locatePoints(correct, attempts) } : { question, chosenLabel, correct };
     setState((prev) => ({ ...prev, answered: result, results: [...prev.results, result] }));
 
-    recordAnswer(question, correct)
+    recordAnswer(question, correct, { hard: correct && (attempts ?? 1) > 1 })
       .then((xp) => {
         if (mountedRef.current && xp > 0) setState((prev) => ({ ...prev, xpEarned: prev.xpEarned + xp }));
       })

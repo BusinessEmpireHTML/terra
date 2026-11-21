@@ -62,3 +62,13 @@ describe("FSRS scheduling", () => {
     expect([0.2, 1, 2.3, 7, 20, 40].map(strengthLevel)).toEqual([0, 1, 1, 3, 4, 5]);
   });
 });
+
+describe("struggled answers", () => {
+  it("schedules a right-but-hard answer sooner than a clean one", () => {
+    const clean = applyAnswer(newProgressRecord("FRA", "locate", start), true, start);
+    const hard = applyAnswer(newProgressRecord("FRA", "locate", start), true, start, true);
+    expect(hard.stability!).toBeLessThan(clean.stability!);
+    expect(new Date(hard.dueAt).getTime()).toBeLessThan(new Date(clean.dueAt).getTime());
+    expect(hard.correctCount).toBe(1);
+  });
+});
