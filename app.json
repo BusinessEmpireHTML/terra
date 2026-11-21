@@ -32,6 +32,13 @@
       "expo-sqlite",
       "expo-font",
       "expo-asset",
+      "expo-localization",
+      [
+        "expo-notifications",
+        {
+          "color": "#C9A24B"
+        }
+      ],
       [
         "expo-splash-screen",
         {

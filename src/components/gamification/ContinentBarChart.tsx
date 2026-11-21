@@ -1,7 +1,9 @@
 import React from "react";
 import { Text, View } from "react-native";
 import { useTheme } from "../../theme/ThemeProvider";
+import { useT } from "../../i18n/useT";
 import type { ContinentBreakdown } from "../../gamification/types";
+import { DENSE_TEXT_MAX_SCALE } from "../../theme/tokens";
 
 /**
  * Horizontal bars of average mastery per continent. Plain flex views rather
@@ -10,6 +12,7 @@ import type { ContinentBreakdown } from "../../gamification/types";
  */
 export function ContinentBarChart({ data }: { data: ContinentBreakdown[] }) {
   const { colors, type, space } = useTheme();
+  const t = useT();
   const barHeight = 14;
 
   return (
@@ -22,13 +25,13 @@ export function ContinentBarChart({ data }: { data: ContinentBreakdown[] }) {
             accessible
             accessibilityLabel={
               started
-                ? `${d.region}: ${d.avgScore}% average mastery across ${d.countriesStarted} of ${d.countriesTotal} countries`
-                : `${d.region}: not started`
+                ? t("continents.a11y", { region: t(`continent.${d.region}` as const), score: d.avgScore, started: d.countriesStarted, total: d.countriesTotal })
+                : t("continents.a11yNotStarted", { region: t(`continent.${d.region}` as const) })
             }
             style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}
           >
             <Text style={[type.bodySmall, { color: colors.textMuted, width: 72 }]} numberOfLines={1}>
-              {d.region}
+              {t(`continent.${d.region}` as const)}
             </Text>
             <View style={{ flex: 1 }}>
               <View style={{ height: barHeight, borderRadius: barHeight / 2, backgroundColor: colors.background, overflow: "hidden" }}>
@@ -41,8 +44,8 @@ export function ContinentBarChart({ data }: { data: ContinentBreakdown[] }) {
                   }}
                 />
               </View>
-              <Text style={[type.label, { color: colors.textMuted, fontSize: 9, marginTop: 3, letterSpacing: 0.6 }]}>
-                {d.countriesStarted}/{d.countriesTotal} STARTED
+              <Text maxFontSizeMultiplier={DENSE_TEXT_MAX_SCALE} style={[type.label, { color: colors.textMuted, fontSize: 9, marginTop: 3, letterSpacing: 0.6 }]}>
+                {t("continents.started", { started: d.countriesStarted, total: d.countriesTotal }).toUpperCase()}
               </Text>
             </View>
             <Text style={[type.data, { color: colors.textMuted, fontSize: 12, width: 38, textAlign: "right" }]}>

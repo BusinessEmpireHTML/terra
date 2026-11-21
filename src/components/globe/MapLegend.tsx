@@ -4,6 +4,8 @@ import { COUNTRIES } from "../../data/countries";
 import { useTheme } from "../../theme/ThemeProvider";
 import { formatCompactNumber } from "../../utils/geo";
 import type { GlobeLayer } from "./globeTypes";
+import { DENSE_TEXT_MAX_SCALE } from "../../theme/tokens";
+import { useT } from "../../i18n/useT";
 
 const byId = new Map(COUNTRIES.map((c) => [c.id, c]));
 const density = (id: string) => {
@@ -16,28 +18,36 @@ const density = (id: string) => {
  * density are easy to confuse (China and India have similar populations but
  * very different densities), so each layer says exactly what it measures.
  */
-const LEGENDS: Record<Exclude<GlobeLayer, "political">, { title: string; swatches: string[]; caption: string }> = {
-  population: {
-    title: "How many people live there",
-    swatches: ["Under 1M", "1–10M", "10–50M", "50–200M", "200M+"],
-    caption: `India and China each have over ${formatCompactNumber(Math.min(byId.get("IND")?.population ?? 0, byId.get("CHN")?.population ?? 0))} people, so they share the top color.`,
-  },
-  density: {
-    title: "How crowded it is — people per km²",
-    swatches: ["Under 10", "10–50", "50–150", "150–400", "400+"],
-    caption: `A km² is a square 1 km on each side (about 140 soccer fields). India fits about ${density("IND")} people in each one; China, with three times the land, about ${density("CHN")}.`,
-  },
-  mastery: {
-    title: "How well you know each country",
-    swatches: ["Just started", "", "", "", "Mastered"],
-    caption: "Countries light up as you practice them.",
-  },
-};
+function legendFor(layer: Exclude<GlobeLayer, "political">, t: ReturnType<typeof useT>): { title: string; swatches: string[]; caption: string } {
+  switch (layer) {
+    case "population":
+      return {
+        title: t("legend.populationTitle"),
+        swatches: [t("legend.pop1"), t("legend.pop2"), t("legend.pop3"), t("legend.pop4"), t("legend.pop5")],
+        caption: t("legend.populationCaption", {
+          count: formatCompactNumber(Math.min(byId.get("IND")?.population ?? 0, byId.get("CHN")?.population ?? 0), t.lang),
+        }),
+      };
+    case "density":
+      return {
+        title: t("legend.densityTitle"),
+        swatches: [t("legend.dens1"), t("legend.dens2"), t("legend.dens3"), t("legend.dens4"), t("legend.dens5")],
+        caption: t("legend.densityCaption", { india: density("IND"), china: density("CHN") }),
+      };
+    case "mastery":
+      return {
+        title: t("legend.masteryTitle"),
+        swatches: [t("legend.masteryLow"), "", "", "", t("legend.masteryHigh")],
+        caption: t("legend.masteryCaption"),
+      };
+  }
+}
 
 export function MapLegend({ layer }: { layer: GlobeLayer }) {
   const { colors, type, space } = useTheme();
+  const t = useT();
   if (layer === "political") return null;
-  const legend = LEGENDS[layer];
+  const legend = legendFor(layer, t);
   return (
     <View
       accessible
@@ -60,7 +70,7 @@ export function MapLegend({ layer }: { layer: GlobeLayer }) {
                   borderColor: colors.border,
                 }}
               />
-              <Text style={[type.label, { color: colors.textMuted, fontSize: 10, letterSpacing: 0.4 }]}>{label}</Text>
+              <Text maxFontSizeMultiplier={DENSE_TEXT_MAX_SCALE} style={[type.label, { color: colors.textMuted, fontSize: 10, letterSpacing: 0.4 }]}>{label}</Text>
             </View>
           ) : null
         )}

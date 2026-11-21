@@ -3,9 +3,11 @@ import { Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { COUNTRIES } from "../../data/countries";
 import { useTheme } from "../../theme/ThemeProvider";
-import { fontFamily } from "../../theme/tokens";
+import { fontFamily, DENSE_TEXT_MAX_SCALE } from "../../theme/tokens";
 import { AnimatedPressable } from "../ui/Primitives";
 import { CountrySilhouette } from "./CountrySilhouette";
+import { useT } from "../../i18n/useT";
+import { Flag } from "../ui/Flag";
 import type { AnswerResult, Question } from "../../quiz/types";
 
 interface Props {
@@ -16,17 +18,15 @@ interface Props {
 
 export function QuestionCard({ question, answered, onSelect }: Props) {
   const { colors, type, space, radius } = useTheme();
+  const t = useT();
   const country = COUNTRIES.find((c) => c.id === question.countryId);
 
   return (
     <View>
       <View style={{ alignItems: "center", marginBottom: space.lg }}>
         {question.promptVisual === "flag" && country && (
-          // Screen readers announce flag emoji by country name ("flag: France"),
-          // which would read the answer aloud — so label it neutrally.
-          <Text style={{ fontSize: 88 }} accessibilityLabel="Flag to identify">
-            {country.flagEmoji}
-          </Text>
+          // Labelled neutrally: naming the country would read the answer aloud.
+          <Flag cca2={country.cca2} width={168} label={t("quiz.flagToIdentify")} style={{ marginVertical: space.sm }} />
         )}
         {question.promptVisual === "shape" && <CountrySilhouette countryId={question.countryId} size={180} />}
         <Text
@@ -53,7 +53,11 @@ export function QuestionCard({ question, answered, onSelect }: Props) {
             backgroundColor = colors.ember + "22";
           }
 
-          const a11yLabel = revealCorrect ? `${choice.label}, correct answer` : revealWrongChosen ? `${choice.label}, your answer, incorrect` : choice.label;
+          const a11yLabel = revealCorrect
+            ? t("quiz.choiceCorrectA11y", { choice: choice.label })
+            : revealWrongChosen
+              ? t("quiz.choiceWrongA11y", { choice: choice.label })
+              : choice.label;
 
           return (
             <AnimatedPressable
@@ -95,8 +99,8 @@ export function QuestionCard({ question, answered, onSelect }: Props) {
             borderLeftColor: answered.correct ? colors.accentSecondary : colors.ember,
           }}
         >
-          <Text style={[type.label, { color: answered.correct ? colors.accentSecondary : colors.ember, marginBottom: 4, fontFamily: fontFamily.mono }]}>
-            {answered.correct ? "CORRECT" : "NOT QUITE"}
+          <Text maxFontSizeMultiplier={DENSE_TEXT_MAX_SCALE} style={[type.label, { color: answered.correct ? colors.accentSecondary : colors.ember, marginBottom: 4, fontFamily: fontFamily.mono }]}>
+            {(answered.correct ? t("quiz.correct") : t("quiz.notQuite")).toUpperCase()}
           </Text>
           <Text style={[type.body, { color: colors.textPrimary }]}>{question.explanation}</Text>
         </View>

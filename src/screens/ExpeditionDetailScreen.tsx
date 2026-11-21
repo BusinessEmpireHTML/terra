@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { GradientBackground, PrimaryButton } from "../components/ui/Primitives";
 import { useSafeBack } from "../hooks/useSafeBack";
+import { Flag } from "../components/ui/Flag";
 import { useTheme } from "../theme/ThemeProvider";
 import { fontFamily } from "../theme/tokens";
 import { COUNTRIES } from "../data/countries";
@@ -15,11 +16,15 @@ import { computeExpeditionProgress, EXPEDITION_COMPLETION_THRESHOLD } from "../g
 import type { CountryMastery } from "../quiz/types";
 import type { Country } from "../types/country";
 
-const COUNTRY_BY_ID = new Map(COUNTRIES.map((c) => [c.id, c]));
 import type { ExpeditionProgress } from "../gamification/types";
+import { useT } from "../i18n/useT";
+import { expeditionDescription, expeditionTitle } from "../i18n/catalog";
+
+const COUNTRY_BY_ID = new Map(COUNTRIES.map((c) => [c.id, c]));
 
 export default function ExpeditionDetailScreen({ expeditionId }: { expeditionId: string }) {
   const { colors, type, space, radius } = useTheme();
+  const t = useT();
   const router = useRouter();
   const goBack = useSafeBack();
   const expedition = EXPEDITIONS_BY_ID.get(expeditionId);
@@ -49,8 +54,8 @@ export default function ExpeditionDetailScreen({ expeditionId }: { expeditionId:
     return (
       <GradientBackground>
         <SafeAreaView style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: space.xl }}>
-          <Text style={[type.body, { color: colors.textMuted }]}>Expedition not found.</Text>
-          <PrimaryButton label="Back" onPress={goBack} style={{ marginTop: space.lg, alignSelf: "stretch" }} />
+          <Text style={[type.body, { color: colors.textMuted }]}>{t("expeditions.notFound")}</Text>
+          <PrimaryButton label={t("common.back")} onPress={goBack} style={{ marginTop: space.lg, alignSelf: "stretch" }} />
         </SafeAreaView>
       </GradientBackground>
     );
@@ -62,26 +67,30 @@ export default function ExpeditionDetailScreen({ expeditionId }: { expeditionId:
     <GradientBackground>
       <SafeAreaView style={{ flex: 1 }}>
         <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: space.lg, paddingTop: space.sm, marginBottom: space.sm }}>
-          <Pressable onPress={goBack} hitSlop={12} style={{ marginRight: space.sm }} accessibilityRole="button" accessibilityLabel="Back">
+          <Pressable onPress={goBack} hitSlop={12} style={{ marginRight: space.sm }} accessibilityRole="button" accessibilityLabel={t("common.back")}>
             <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
           </Pressable>
           <View style={{ flex: 1 }}>
             <Text accessibilityRole="header" style={[type.title, { color: colors.textPrimary }]}>
-              {expedition.title}
+              {expeditionTitle(expedition, t.lang)}
             </Text>
-            <Text style={[type.bodySmall, { color: colors.textMuted }]}>{expedition.description}</Text>
+            <Text style={[type.bodySmall, { color: colors.textMuted }]}>{expeditionDescription(expedition, t.lang)}</Text>
           </View>
         </View>
 
         <ScrollView contentContainerStyle={{ padding: space.lg, paddingTop: 0, paddingBottom: space.xxl }}>
           <View style={{ marginBottom: space.md }}>
             <Text style={[type.bodySmall, { color: colors.textMuted, marginBottom: space.sm }]}>
-              {progress?.completedCountryIds.length ?? 0} of {expedition.countryIds.length} countries at {EXPEDITION_COMPLETION_THRESHOLD}%+ mastery
+              {t("expeditions.progress", {
+                done: progress?.completedCountryIds.length ?? 0,
+                total: expedition.countryIds.length,
+                percent: EXPEDITION_COMPLETION_THRESHOLD,
+              })}
             </Text>
             <PrimaryButton
-              label={progress?.isComplete ? "Keep practicing" : "Practice this expedition"}
+              label={progress?.isComplete ? t("expeditions.keepPracticing") : t("expeditions.practice")}
               onPress={() => router.push(`/quiz/mixed?expedition=${expedition.id}`)}
-              accessibilityHint="Starts a quiz drawn from this expedition's countries"
+              accessibilityHint={t("expeditions.practiceHint")}
             />
           </View>
 
@@ -95,7 +104,7 @@ export default function ExpeditionDetailScreen({ expeditionId }: { expeditionId:
                 alignItems: "center",
               }}
             >
-              <Text style={[type.body, { color: colors.background, fontFamily: fontFamily.bodySemiBold }]}>Expedition complete 🏅</Text>
+              <Text style={[type.body, { color: colors.background, fontFamily: fontFamily.bodySemiBold }]}>{t("expeditions.complete")} 🏅</Text>
             </View>
           )}
 
@@ -107,7 +116,7 @@ export default function ExpeditionDetailScreen({ expeditionId }: { expeditionId:
                 key={c.id}
                 onPress={() => router.push(`/country/${c.id}`)}
                 accessibilityRole="button"
-                accessibilityLabel={`${c.name.common}, ${mastery?.score ?? 0}% mastery${done ? ", complete" : ""}`}
+                accessibilityLabel={`${t.country(c)}, ${t("expeditions.masteryPercent", { percent: mastery?.score ?? 0 })}${done ? `, ${t("expeditions.doneA11y")}` : ""}`}
               >
                 <View
                   style={{
@@ -121,10 +130,10 @@ export default function ExpeditionDetailScreen({ expeditionId }: { expeditionId:
                     marginBottom: space.sm,
                   }}
                 >
-                  <Text style={{ fontSize: 24, marginRight: space.sm }}>{c.flagEmoji}</Text>
+                  <Flag cca2={c.cca2} width={32} style={{ marginRight: space.sm }} />
                   <View style={{ flex: 1 }}>
-                    <Text style={[type.body, { color: colors.textPrimary }]}>{c.name.common}</Text>
-                    <Text style={[type.bodySmall, { color: colors.textMuted }]}>{mastery?.score ?? 0}% mastery</Text>
+                    <Text style={[type.body, { color: colors.textPrimary }]}>{t.country(c)}</Text>
+                    <Text style={[type.bodySmall, { color: colors.textMuted }]}>{t("expeditions.masteryPercent", { percent: mastery?.score ?? 0 })}</Text>
                   </View>
                   <Ionicons
                     name={done ? "checkmark-circle" : "ellipse-outline"}

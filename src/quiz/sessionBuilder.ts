@@ -1,5 +1,6 @@
 import { ELIGIBLE_POOLS, generateQuestion } from "./generators";
 import { buildDailyQuiz } from "./daily";
+import { buildChallengeQuiz } from "./challenge";
 import { progressStore } from "../services/progressStore";
 import { shuffle } from "../utils/random";
 import { QUIZ_CATEGORIES, type ProgressRecord, type Question, type QuizCategory } from "./types";
@@ -29,6 +30,8 @@ export interface SessionOptions {
   countryIds?: string[];
   /** Build that date's Daily Quiz (YYYY-MM-DD) instead — the same questions for every player. */
   dailyDate?: string;
+  /** Build a friend challenge's 10 countries from its seed instead. */
+  challengeSeed?: number;
 }
 
 interface Pair {
@@ -90,8 +93,9 @@ export function selectPairs(ranked: Pair[], length: number): Pair[] {
 }
 
 export async function buildSession(filter: CategoryFilter, options: SessionOptions = {}): Promise<Question[]> {
-  const { length = DEFAULT_SESSION_LENGTH, focusCountryId, countryIds, dailyDate } = options;
+  const { length = DEFAULT_SESSION_LENGTH, focusCountryId, countryIds, dailyDate, challengeSeed } = options;
   if (dailyDate) return buildDailyQuiz(dailyDate);
+  if (challengeSeed != null) return buildChallengeQuiz(challengeSeed);
   const allowed = focusCountryId ? new Set([focusCountryId]) : countryIds ? new Set(countryIds) : null;
 
   const candidates: Pair[] = [];

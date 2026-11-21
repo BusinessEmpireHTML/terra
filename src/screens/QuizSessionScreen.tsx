@@ -20,17 +20,23 @@ import { EXPEDITIONS_BY_ID } from "../gamification/expeditions";
 import { COUNTRIES } from "../data/countries";
 import { useSafeBack } from "../hooks/useSafeBack";
 import type { Achievement } from "../gamification/types";
+import { DENSE_TEXT_MAX_SCALE } from "../theme/tokens";
+import { ChallengeResultCard } from "../components/quiz/ChallengeResultCard";
+import { useT } from "../i18n/useT";
+import { achievementTitle, expeditionTitle } from "../i18n/catalog";
 
 interface Props {
   filter: CategoryFilter;
   focusCountryId?: string;
   expeditionId?: string;
   isDailyChallenge?: boolean;
+  /** A friend challenge: its seed, and the friend's score to beat (null if none yet). */
+  challenge?: { seed: number; opponentScore: number | null };
 }
 
-
-export default function QuizSessionScreen({ filter, focusCountryId, expeditionId, isDailyChallenge }: Props) {
+export default function QuizSessionScreen({ filter, focusCountryId, expeditionId, isDailyChallenge, challenge }: Props) {
   const { colors, type, space, radius } = useTheme();
+  const t = useT();
   const goBack = useSafeBack();
   const expedition = expeditionId ? EXPEDITIONS_BY_ID.get(expeditionId) : undefined;
   const focusCountry = focusCountryId ? COUNTRIES.find((c) => c.id === focusCountryId) : undefined;
@@ -43,6 +49,7 @@ export default function QuizSessionScreen({ filter, focusCountryId, expeditionId
       focusCountryId,
       countryIds: expedition?.countryIds,
       dailyDate: isDailyChallenge ? dailyDate : undefined,
+      challengeSeed: challenge?.seed,
     });
   const [newAchievements, setNewAchievements] = useState<Achievement[]>([]);
   const wrapUpStarted = useRef(false);
@@ -63,13 +70,17 @@ export default function QuizSessionScreen({ filter, focusCountryId, expeditionId
   }, [isDailyChallenge, dailyDate]);
 
   const categoryMeta = filter !== "mixed" ? QUIZ_CATEGORIES.find((c) => c.key === filter) : null;
-  const title = focusCountry
-    ? `Practice: ${focusCountry.name.common}`
-    : expedition
-      ? expedition.title
-      : isDailyChallenge
-        ? `Daily #${dailyNumber(dailyDate)}`
-        : categoryMeta?.label ?? "Mixed review";
+  const title = challenge
+    ? t("challenge.title")
+    : focusCountry
+      ? t("quiz.practiceTitle", { country: t.country(focusCountry) })
+      : expedition
+        ? expeditionTitle(expedition, t.lang)
+        : isDailyChallenge
+          ? t("quiz.dailyTitle", { number: dailyNumber(dailyDate) })
+          : categoryMeta
+            ? t(`category.${categoryMeta.key}` as const)
+            : t("quiz.mixedTitle");
 
   useEffect(() => {
     if (!isComplete || wrapUpStarted.current) return;
@@ -104,17 +115,17 @@ export default function QuizSessionScreen({ filter, focusCountryId, expeditionId
       <GradientBackground>
         <SafeAreaView style={{ flex: 1, paddingHorizontal: space.xl }}>
           <View style={{ flexDirection: "row", paddingTop: space.sm }}>
-            <Pressable onPress={goBack} hitSlop={12} accessibilityRole="button" accessibilityLabel="Close">
+            <Pressable onPress={goBack} hitSlop={12} accessibilityRole="button" accessibilityLabel={t("common.close")}>
               <Ionicons name="close" size={26} color={colors.textPrimary} />
             </Pressable>
           </View>
           {dailyAnswers && (
             <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
               <Text style={[type.title, { color: colors.textPrimary, textAlign: "center", marginBottom: space.lg }]}>
-                You've played today's Daily
+                {t("quiz.dailyPlayed")}
               </Text>
               <DailyResultCard date={dailyDate} answers={dailyAnswers} />
-              <PrimaryButton label="Done" onPress={goBack} style={{ marginTop: space.md, alignSelf: "stretch" }} />
+              <PrimaryButton label={t("common.done")} onPress={goBack} style={{ marginTop: space.md, alignSelf: "stretch" }} />
             </View>
           )}
         </SafeAreaView>
@@ -133,11 +144,11 @@ export default function QuizSessionScreen({ filter, focusCountryId, expeditionId
     <GradientBackground>
       <SafeAreaView style={{ flex: 1 }}>
         <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: space.lg, paddingTop: space.sm }}>
-          <Pressable onPress={goBack} hitSlop={12} accessibilityRole="button" accessibilityLabel="Close quiz">
+          <Pressable onPress={goBack} hitSlop={12} accessibilityRole="button" accessibilityLabel={t("quiz.closeA11y")}>
             <Ionicons name="close" size={26} color={colors.textPrimary} />
           </Pressable>
           <View style={{ flex: 1, alignItems: "center" }}>
-            <Text style={[type.section, { color: colors.textMuted }]} numberOfLines={1}>
+            <Text maxFontSizeMultiplier={DENSE_TEXT_MAX_SCALE} style={[type.section, { color: colors.textMuted }]} numberOfLines={1}>
               {title.toUpperCase()}
             </Text>
             {!loading && !isComplete && total > 0 && (
@@ -161,23 +172,23 @@ export default function QuizSessionScreen({ filter, focusCountryId, expeditionId
 
         {loading && (
           <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-            <Text style={[type.body, { color: colors.textMuted }]}>Building your session…</Text>
+            <Text style={[type.body, { color: colors.textMuted }]}>{t("quiz.building")}</Text>
           </View>
         )}
 
         {!loading && error && (
-          <CenteredMessage icon="cloud-offline-outline" title="Something went wrong" body={error}>
-            <PrimaryButton label="Try again" onPress={retry} style={{ marginTop: space.xl, width: "100%" }} />
+          <CenteredMessage icon="cloud-offline-outline" title={t("quiz.errorTitle")} body={t("quiz.errorBody")}>
+            <PrimaryButton label={t("common.tryAgain")} onPress={retry} style={{ marginTop: space.xl, width: "100%" }} />
           </CenteredMessage>
         )}
 
         {!loading && !error && total === 0 && (
           <CenteredMessage
             icon="checkmark-done-circle-outline"
-            title="Nothing to practice here"
-            body="There aren't any questions available for this selection. Try a mixed review or another category."
+            title={t("quiz.emptyTitle")}
+            body={t("quiz.emptyBody")}
           >
-            <PrimaryButton label="Back" onPress={goBack} style={{ marginTop: space.xl, width: "100%" }} />
+            <PrimaryButton label={t("common.back")} onPress={goBack} style={{ marginTop: space.xl, width: "100%" }} />
           </CenteredMessage>
         )}
 
@@ -195,7 +206,9 @@ export default function QuizSessionScreen({ filter, focusCountryId, expeditionId
 
         {isComplete && (
           <ScrollView contentContainerStyle={{ flexGrow: 1, alignItems: "center", justifyContent: "center", padding: space.xl }}>
-            {isDailyChallenge && dailyAnswers ? (
+            {challenge ? (
+              <ChallengeResultCard seed={challenge.seed} points={pointsEarned} opponentScore={challenge.opponentScore} />
+            ) : isDailyChallenge && dailyAnswers ? (
               <>
                 <DailyResultCard date={dailyDate} answers={dailyAnswers} />
                 {xpEarned > 0 && <Text style={[type.body, { color: colors.textMuted, marginTop: 4 }]}>+{xpEarned} XP</Text>}
@@ -207,16 +220,17 @@ export default function QuizSessionScreen({ filter, focusCountryId, expeditionId
                 </Text>
                 <Text
                   style={[type.hero, { color: colors.textPrimary, marginTop: space.md, fontSize: 32 }]}
-                  accessibilityLabel={`${correctCount} out of ${total} correct`}
+                  accessibilityLabel={t("quiz.correctOutOf", { correct: correctCount, total })}
                 >
                   {correctCount} / {total}
                 </Text>
                 <Text style={[type.body, { color: colors.textMuted, marginTop: 4 }]}>
-                  {percent}% correct{xpEarned > 0 ? ` · +${xpEarned} XP` : ""}
+                  {t("quiz.percentCorrect", { percent })}
+                  {xpEarned > 0 ? ` · +${xpEarned} XP` : ""}
                 </Text>
                 {pointsPossible > 0 && (
-                  <Text style={[type.label, { color: colors.accent, marginTop: space.sm, fontSize: 13 }]}>
-                    {pointsEarned} / {pointsPossible} POINTS
+                  <Text maxFontSizeMultiplier={DENSE_TEXT_MAX_SCALE} style={[type.label, { color: colors.accent, marginTop: space.sm, fontSize: 13 }]}>
+                    {t("quiz.points", { earned: pointsEarned, possible: pointsPossible }).toUpperCase()}
                   </Text>
                 )}
               </>
@@ -233,23 +247,23 @@ export default function QuizSessionScreen({ filter, focusCountryId, expeditionId
                   alignSelf: "stretch",
                 }}
               >
-                <Text style={[type.label, { color: colors.accent }]}>
-                  {newAchievements.length > 1 ? "ACHIEVEMENTS UNLOCKED" : "ACHIEVEMENT UNLOCKED"}
+                <Text maxFontSizeMultiplier={DENSE_TEXT_MAX_SCALE} style={[type.label, { color: colors.accent }]}>
+                  {(newAchievements.length > 1 ? t("quiz.achievementsUnlocked") : t("quiz.achievementUnlocked")).toUpperCase()}
                 </Text>
                 {newAchievements.map((a) => (
                   <Text key={a.id} style={[type.body, { color: colors.textPrimary, marginTop: 4 }]}>
-                    🏅 {a.title}
+                    🏅 {achievementTitle(a, t.lang)}
                   </Text>
                 ))}
               </View>
             )}
-            <PrimaryButton label="Done" onPress={goBack} style={{ marginTop: space.xl, width: "100%" }} />
+            <PrimaryButton label={t("common.done")} onPress={goBack} style={{ marginTop: space.xl, width: "100%" }} />
           </ScrollView>
         )}
 
         {currentQuestion && answered && (
           <View style={{ paddingHorizontal: space.lg, paddingBottom: space.md }}>
-            <PrimaryButton label={index + 1 >= total ? "See results" : "Next"} onPress={next} />
+            <PrimaryButton label={index + 1 >= total ? t("quiz.seeResults") : t("common.next")} onPress={next} />
           </View>
         )}
       </SafeAreaView>

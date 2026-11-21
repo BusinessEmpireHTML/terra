@@ -9,12 +9,16 @@ import { useEndlessLocate } from "../quiz/useEndlessLocate";
 import { whenAnswersSaved } from "../quiz/answerRecorder";
 import { checkForNewAchievements } from "../gamification/checkAchievements";
 import { useSafeBack } from "../hooks/useSafeBack";
+import { useT } from "../i18n/useT";
+import { achievementTitle } from "../i18n/catalog";
 import type { Achievement } from "../gamification/types";
+import { DENSE_TEXT_MAX_SCALE } from "../theme/tokens";
 
 /** Endless "Find it on the globe": keep going as long as you like; your best streak is saved. */
 export default function FindEndlessScreen() {
   const { colors, type, space } = useTheme();
   const goBack = useSafeBack();
+  const t = useT();
   const game = useEndlessLocate();
   const [ended, setEnded] = useState(false);
   const [newAchievements, setNewAchievements] = useState<Achievement[]>([]);
@@ -43,23 +47,24 @@ export default function FindEndlessScreen() {
             🧭
           </Text>
           <Text style={[type.hero, { color: colors.textPrimary, marginTop: space.md, fontSize: 32 }]}>
-            {game.points} points
+            {t("endless.points", { points: game.points })}
           </Text>
           <Text style={[type.body, { color: colors.textMuted, marginTop: 4, textAlign: "center" }]}>
-            {game.found} of {game.attempts} countries found{game.xpEarned > 0 ? ` · +${game.xpEarned} XP` : ""}
+            {t("endless.foundLine", { found: game.found, attempts: game.attempts })}
+            {game.xpEarned > 0 ? ` · +${game.xpEarned} XP` : ""}
           </Text>
           <Text style={[type.body, { color: colors.textSecondary, marginTop: space.md, textAlign: "center" }]}>
-            Longest streak this run: {game.runBest}
+            {t("endless.runBest", { streak: game.runBest })}
           </Text>
-          <Text style={[type.label, { color: game.isNewBest ? colors.accent : colors.textMuted, marginTop: space.xs }]}>
-            {game.isNewBest ? "NEW BEST STREAK!" : `BEST EVER: ${game.bestEver}`}
+          <Text maxFontSizeMultiplier={DENSE_TEXT_MAX_SCALE} style={[type.label, { color: game.isNewBest ? colors.accent : colors.textMuted, marginTop: space.xs }]}>
+            {(game.isNewBest ? t("endless.newBest") : t("endless.bestEver", { streak: game.bestEver })).toUpperCase()}
           </Text>
           {newAchievements.map((a) => (
             <Text key={a.id} style={[type.body, { color: colors.textPrimary, marginTop: space.sm }]}>
-              🏅 {a.title}
+              🏅 {achievementTitle(a, t.lang)}
             </Text>
           ))}
-          <PrimaryButton label="Done" onPress={goBack} style={{ marginTop: space.xl, width: "100%" }} />
+          <PrimaryButton label={t("common.done")} onPress={goBack} style={{ marginTop: space.xl, width: "100%" }} />
         </SafeAreaView>
       </GradientBackground>
     );
@@ -69,24 +74,24 @@ export default function FindEndlessScreen() {
     <GradientBackground>
       <SafeAreaView style={{ flex: 1 }}>
         <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: space.lg, paddingTop: space.sm }}>
-          <Pressable onPress={end} hitSlop={12} accessibilityRole="button" accessibilityLabel="End endless mode">
+          <Pressable onPress={end} hitSlop={12} accessibilityRole="button" accessibilityLabel={t("endless.end")}>
             <Ionicons name="close" size={26} color={colors.textPrimary} />
           </Pressable>
           <View style={{ flex: 1, alignItems: "center" }}>
-            <Text style={[type.section, { color: colors.textMuted }]}>FIND IT · ENDLESS</Text>
+            <Text maxFontSizeMultiplier={DENSE_TEXT_MAX_SCALE} style={[type.section, { color: colors.textMuted }]}>{t("endless.title").toUpperCase()}</Text>
           </View>
           <View style={{ width: 26 }} />
         </View>
 
         <View
           accessible
-          accessibilityLabel={`${game.points} points. Found ${game.found}. Streak ${game.streak}. Best ${game.bestEver}.`}
+          accessibilityLabel={t("endless.hudA11y", { points: game.points, found: game.found, streak: game.streak, best: game.bestEver })}
           style={{ flexDirection: "row", justifyContent: "center", gap: space.lg, marginTop: space.sm }}
         >
-          <Stat label="POINTS" value={game.points} highlight />
-          <Stat label="FOUND" value={game.found} />
-          <Stat label="STREAK" value={game.streak} highlight={game.streak > 0 && game.streak >= game.bestEver} />
-          <Stat label="BEST" value={game.bestEver} />
+          <Stat label={t("endless.statPoints")} value={game.points} highlight />
+          <Stat label={t("endless.statFound")} value={game.found} />
+          <Stat label={t("endless.statStreak")} value={game.streak} highlight={game.streak > 0 && game.streak >= game.bestEver} />
+          <Stat label={t("endless.statBest")} value={game.bestEver} />
         </View>
 
         {game.question ? (
@@ -95,13 +100,13 @@ export default function FindEndlessScreen() {
           </View>
         ) : (
           <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-            <Text style={[type.body, { color: colors.textMuted }]}>Spinning up the globe…</Text>
+            <Text style={[type.body, { color: colors.textMuted }]}>{t("endless.loading")}</Text>
           </View>
         )}
 
         {game.answered && (
           <View style={{ paddingHorizontal: space.lg, paddingBottom: space.md }}>
-            <PrimaryButton label="Next country" onPress={game.next} />
+            <PrimaryButton label={t("endless.next")} onPress={game.next} />
           </View>
         )}
       </SafeAreaView>
@@ -114,7 +119,7 @@ function Stat({ label, value, highlight }: { label: string; value: number; highl
   return (
     <View style={{ alignItems: "center", minWidth: 56 }}>
       <Text style={[type.data, { color: highlight ? colors.accent : colors.textPrimary, fontSize: 20 }]}>{value}</Text>
-      <Text style={[type.label, { color: colors.textMuted, fontSize: 9 }]}>{label}</Text>
+      <Text maxFontSizeMultiplier={DENSE_TEXT_MAX_SCALE} style={[type.label, { color: colors.textMuted, fontSize: 9 }]}>{label.toUpperCase()}</Text>
     </View>
   );
 }

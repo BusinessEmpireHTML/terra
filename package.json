@@ -12,7 +12,8 @@
     "test:watch": "jest --watch",
     "check": "npm run typecheck && npm test",
     "data": "node scripts/prepare-data.mjs",
-    "postinstall": "setup-skia-web public"
+    "postinstall": "setup-skia-web public",
+    "flags": "node scripts/prepare-flags.mjs"
   },
   "jest": {
     "preset": "jest-expo"
@@ -31,6 +32,8 @@
     "expo-haptics": "~58.0.8",
     "expo-linear-gradient": "~58.0.4",
     "expo-linking": "~58.0.17",
+    "expo-localization": "~58.0.5",
+    "expo-notifications": "~58.1.9",
     "expo-router": "~58.0.32",
     "expo-splash-screen": "~58.0.14",
     "expo-sqlite": "~58.0.18",
@@ -53,6 +56,7 @@
     "@babel/core": "^7.25.2",
     "@types/jest": "^29.5.14",
     "@types/react": "~19.3.0",
+    "country-flag-icons": "^1.6.20",
     "jest": "^29.7.0",
     "jest-expo": "~58.0.15",
     "typescript": "~6.0.3"

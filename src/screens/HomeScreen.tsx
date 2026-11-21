@@ -6,6 +6,7 @@ import Animated, { FadeOut } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Globe, type GlobeLayer } from "../components/globe/Globe";
 import { MapLegend } from "../components/globe/MapLegend";
+import { Flag } from "../components/ui/Flag";
 import { CountrySearchSheet } from "../components/search/CountrySearchSheet";
 import { GradientBackground } from "../components/ui/Primitives";
 import { useTheme } from "../theme/ThemeProvider";
@@ -14,17 +15,20 @@ import { COUNTRIES } from "../data/countries";
 import { progressStore } from "../services/progressStore";
 import { computeAllMastery } from "../quiz/mastery";
 import type { Country } from "../types/country";
+import { DENSE_TEXT_MAX_SCALE } from "../theme/tokens";
+import { useT } from "../i18n/useT";
 
-const LAYERS: { key: GlobeLayer; label: string }[] = [
-  { key: "political", label: "Borders" },
-  { key: "population", label: "Population" },
-  { key: "density", label: "Density" },
-  { key: "mastery", label: "Mastery" },
-];
+const LAYERS = [
+  { key: "political", label: "home.layerBorders" },
+  { key: "population", label: "home.layerPopulation" },
+  { key: "density", label: "home.layerDensity" },
+  { key: "mastery", label: "home.layerMastery" },
+] as const satisfies readonly { key: GlobeLayer; label: string }[];
 const COUNTRY_BY_ID = new Map(COUNTRIES.map((c) => [c.id, c]));
 
 export default function HomeScreen() {
   const { colors, type, space } = useTheme();
+  const t = useT();
   const router = useRouter();
   const [searchOpen, setSearchOpen] = useState(false);
   const [showHint, setShowHint] = useState(true);
@@ -35,8 +39,8 @@ export default function HomeScreen() {
   const [area, setArea] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
-    const t = setTimeout(() => setShowHint(false), 4500);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setShowHint(false), 4500);
+    return () => clearTimeout(timer);
   }, []);
 
   // Refresh on focus, not just mount, so finishing a quiz and returning here
@@ -78,13 +82,13 @@ export default function HomeScreen() {
             <Text accessibilityRole="header" style={[type.hero, { color: colors.textPrimary, fontSize: 30 }]}>
               Terra
             </Text>
-            <Text style={[type.subtitle, { color: colors.textMuted }]}>Explore the world, one country at a time</Text>
+            <Text style={[type.subtitle, { color: colors.textMuted }]}>{t("home.tagline")}</Text>
           </View>
           <Pressable
             onPress={() => setSearchOpen(true)}
             hitSlop={12}
             accessibilityRole="button"
-            accessibilityLabel="Search countries"
+            accessibilityLabel={t("home.search")}
             style={{
               width: 44,
               height: 44,
@@ -115,7 +119,7 @@ export default function HomeScreen() {
                 onPress={() => setLayer(l.key)}
                 accessibilityRole="radio"
                 accessibilityState={{ checked: active }}
-                accessibilityLabel={`${l.label} map layer`}
+                accessibilityLabel={t("home.layerA11y", { layer: t(l.label) })}
                 style={{
                   paddingVertical: 6,
                   paddingHorizontal: 12,
@@ -125,7 +129,7 @@ export default function HomeScreen() {
                   borderColor: active ? colors.accent : colors.border,
                 }}
               >
-                <Text style={[type.label, { color: active ? colors.background : colors.textMuted }]}>{l.label.toUpperCase()}</Text>
+                <Text maxFontSizeMultiplier={DENSE_TEXT_MAX_SCALE} style={[type.label, { color: active ? colors.background : colors.textMuted }]}>{t(l.label).toUpperCase()}</Text>
               </Pressable>
             );
           })}
@@ -152,21 +156,21 @@ export default function HomeScreen() {
               pointerEvents="none"
               style={{ position: "absolute", bottom: space.sm, left: 0, right: 0, alignItems: "center" }}
             >
-              <Text style={[type.bodySmall, { color: colors.textMuted }]}>Drag to rotate · Pinch to zoom · Tap a country</Text>
+              <Text style={[type.bodySmall, { color: colors.textMuted }]}>{t("home.hint")}</Text>
             </Animated.View>
           )}
         </View>
 
         {recentCountries.length > 0 && (
           <View style={{ paddingHorizontal: space.lg, paddingBottom: space.md }}>
-            <Text style={[type.section, { color: colors.textMuted, marginBottom: space.sm }]}>RECENTLY EXPLORED</Text>
+            <Text maxFontSizeMultiplier={DENSE_TEXT_MAX_SCALE} style={[type.section, { color: colors.textMuted, marginBottom: space.sm }]}>{t("home.recents").toUpperCase()}</Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
               {recentCountries.slice(0, 6).map((c) => (
                 <Pressable
                   key={c.id}
                   onPress={() => goToCountry(c.id)}
                   accessibilityRole="button"
-                  accessibilityLabel={c.name.common}
+                  accessibilityLabel={t.country(c)}
                   style={{
                     flexDirection: "row",
                     alignItems: "center",
@@ -178,8 +182,8 @@ export default function HomeScreen() {
                     borderColor: colors.border,
                   }}
                 >
-                  <Text style={{ fontSize: 16, marginRight: 6 }}>{c.flagEmoji}</Text>
-                  <Text style={[type.bodySmall, { color: colors.textPrimary }]}>{c.name.common}</Text>
+                  <Flag cca2={c.cca2} width={20} style={{ marginRight: 6 }} />
+                  <Text style={[type.bodySmall, { color: colors.textPrimary }]}>{t.country(c)}</Text>
                 </Pressable>
               ))}
             </View>

@@ -46,9 +46,10 @@ export function initialBearing([lon1, lat1]: LonLat, [lon2, lat2]: LonLat): numb
   return ((Math.atan2(y, x) / DEG) % 360 + 360) % 360;
 }
 
-const COMPASS = ["north", "northeast", "east", "southeast", "south", "southwest", "west", "northwest"];
+const COMPASS = ["north", "northeast", "east", "southeast", "south", "southwest", "west", "northwest"] as const;
+export type CompassPoint = (typeof COMPASS)[number];
 
-export function compassName(bearing: number): string {
+export function compassName(bearing: number): CompassPoint {
   return COMPASS[Math.round((((bearing % 360) + 360) % 360) / 45) % 8];
 }
 

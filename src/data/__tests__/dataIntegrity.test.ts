@@ -1,6 +1,7 @@
 import { COUNTRIES } from "../countries";
 import { COUNTRY_CONTENT } from "../countryContent";
 import worldBorders from "../worldBorders.json";
+import { FLAG_SVGS } from "../flags";
 
 const ids = new Set(COUNTRIES.map((c) => c.id));
 const byId = new Map(COUNTRIES.map((c) => [c.id, c]));
@@ -42,6 +43,10 @@ describe("country data", () => {
   it("has narrative content for every country and nothing else", () => {
     for (const c of COUNTRIES) expect(COUNTRY_CONTENT[c.id]).toBeDefined();
     for (const key of Object.keys(COUNTRY_CONTENT)) expect(ids.has(key)).toBe(true);
+  });
+
+  it("has an SVG flag for every country", () => {
+    for (const c of COUNTRIES) expect(FLAG_SVGS[c.cca2]).toMatch(/^<svg[\s\S]*<\/svg>$/);
   });
 
   it("keeps the corrected facts corrected", () => {

@@ -13,7 +13,7 @@ import {
   type SkCanvas,
   type SkPathBuilder,
 } from "@shopify/react-native-skia";
-import { cancelAnimation, Easing, useDerivedValue, useSharedValue, withDecay, withTiming } from "react-native-reanimated";
+import { cancelAnimation, Easing, useDerivedValue, useReducedMotion, useSharedValue, withDecay, withTiming } from "react-native-reanimated";
 import {
   GestureDetector,
   useCompetingGestures,
@@ -25,6 +25,7 @@ import {
 import { scheduleOnRN } from "react-native-worklets";
 import { COUNTRIES } from "../../data/countries";
 import { useTheme } from "../../theme/ThemeProvider";
+import { useT } from "../../i18n/useT";
 import { tapFeedback } from "../../utils/haptics";
 import {
   BORDERS,
@@ -400,11 +401,19 @@ export default function GlobeCanvas({
   onTap,
 }: GlobeProps) {
   const { colors } = useTheme();
+  const t = useT();
   const radius = size / 2;
   const width = widthProp ?? size;
   const height = heightProp ?? size;
   const cx = width / 2;
   const cy = height / 2;
+
+  // Honor the system "Reduce Motion" setting: jump instead of flying, and no glide after a flick.
+  const reduceMotion = useReducedMotion();
+  const reduceMotionSV = useSharedValue(reduceMotion);
+  useEffect(() => {
+    reduceMotionSV.value = reduceMotion;
+  }, [reduceMotion, reduceMotionSV]);
 
   const lambda = useSharedValue(INITIAL_ROTATION.lambda);
   const phi = useSharedValue(INITIAL_ROTATION.phi);
@@ -495,11 +504,11 @@ export default function GlobeCanvas({
       const country = COUNTRY_BY_ID.get(cca3);
       if (!country) return;
       const target = rotationToCenter(country.latlng[0], country.latlng[1]);
-      const timing = { duration: FLY_MS, easing: Easing.out(Easing.cubic) };
+      const timing = { duration: reduceMotion ? 0 : FLY_MS, easing: Easing.out(Easing.cubic) };
       lambda.value = withTiming(nearestAngle(lambda.value, target.lambda), timing);
       phi.value = withTiming(target.phi, timing);
     },
-    [lambda, phi]
+    [lambda, phi, reduceMotion]
   );
 
   useEffect(() => {
@@ -573,7 +582,7 @@ export default function GlobeCanvas({
     },
     onDeactivate: (e) => {
       "worklet";
-      if (pinching.value) return;
+      if (pinching.value || reduceMotionSV.value) return;
       // A flick keeps the globe turning, slowing down like a real one.
       const k = RAD2DEG / (radius * zoom.value);
       lambda.value = withDecay({ velocity: e.velocityX * k, deceleration: FLICK_DECELERATION });
@@ -629,11 +638,11 @@ export default function GlobeCanvas({
         style={{ width, height }}
         accessible
         accessibilityRole="image"
-        accessibilityLabel="Interactive globe"
+        accessibilityLabel={t("globe.a11y")}
         accessibilityHint={
           onTap
-            ? "Drag to rotate and pinch to zoom, then tap where you think the country is."
-            : "Drag to rotate, pinch to zoom, and tap a country to open it. Use the search button to find a country by name."
+            ? t("globe.gameHint")
+            : t("globe.exploreHint")
         }
       >
         <Canvas style={{ width, height }}>

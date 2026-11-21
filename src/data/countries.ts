@@ -13,6 +13,10 @@ export const COUNTRIES: Country[] = [
       "common": "Afghanistan",
       "official": "Islamic Republic of Afghanistan"
     },
+    "names": {
+      "es": "Afganistán",
+      "pt": "Afeganistão"
+    },
     "flagEmoji": "🇦🇫",
     "region": "Asia",
     "subregion": "Southern Asia",
@@ -69,6 +73,11 @@ export const COUNTRIES: Country[] = [
       "common": "Albania",
       "official": "Republic of Albania"
     },
+    "names": {
+      "fr": "Albanie",
+      "de": "Albanien",
+      "pt": "Albânia"
+    },
     "flagEmoji": "🇦🇱",
     "region": "Europe",
     "subregion": "Southeast Europe",
@@ -124,6 +133,12 @@ export const COUNTRIES: Country[] = [
       "common": "Algeria",
       "official": "People's Democratic Republic of Algeria"
     },
+    "names": {
+      "es": "Argelia",
+      "fr": "Algérie",
+      "de": "Algerien",
+      "pt": "Argélia"
+    },
     "flagEmoji": "🇩🇿",
     "region": "Africa",
     "subregion": "Northern Africa",
@@ -178,6 +193,9 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Andorra",
       "official": "Principality of Andorra"
+    },
+    "names": {
+      "fr": "Andorre"
     },
     "flagEmoji": "🇦🇩",
     "region": "Europe",
@@ -293,6 +311,12 @@ export const COUNTRIES: Country[] = [
       "common": "Antigua and Barbuda",
       "official": "Antigua and Barbuda"
     },
+    "names": {
+      "es": "Antigua y Barbuda",
+      "fr": "Antigua-et-Barbuda",
+      "de": "Antigua und Barbuda",
+      "pt": "Antígua e Barbuda"
+    },
     "flagEmoji": "🇦🇬",
     "region": "Americas",
     "subregion": "Caribbean",
@@ -338,6 +362,10 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Argentina",
       "official": "Argentine Republic"
+    },
+    "names": {
+      "fr": "Argentine",
+      "de": "Argentinien"
     },
     "flagEmoji": "🇦🇷",
     "region": "Americas",
@@ -397,6 +425,11 @@ export const COUNTRIES: Country[] = [
       "common": "Armenia",
       "official": "Republic of Armenia"
     },
+    "names": {
+      "fr": "Arménie",
+      "de": "Armenien",
+      "pt": "Arménia"
+    },
     "flagEmoji": "🇦🇲",
     "region": "Asia",
     "subregion": "Western Asia",
@@ -449,6 +482,11 @@ export const COUNTRIES: Country[] = [
       "common": "Australia",
       "official": "Commonwealth of Australia"
     },
+    "names": {
+      "fr": "Australie",
+      "de": "Australien",
+      "pt": "Austrália"
+    },
     "flagEmoji": "🇦🇺",
     "region": "Oceania",
     "subregion": "Australia and New Zealand",
@@ -498,6 +536,11 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Austria",
       "official": "Republic of Austria"
+    },
+    "names": {
+      "fr": "Autriche",
+      "de": "Österreich",
+      "pt": "Áustria"
     },
     "flagEmoji": "🇦🇹",
     "region": "Europe",
@@ -562,6 +605,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Azerbaijan",
       "official": "Republic of Azerbaijan"
+    },
+    "names": {
+      "es": "Azerbaiyán",
+      "fr": "Azerbaïdjan",
+      "de": "Aserbaidschan",
+      "pt": "Azerbeijão"
     },
     "flagEmoji": "🇦🇿",
     "region": "Asia",
@@ -668,6 +717,11 @@ export const COUNTRIES: Country[] = [
       "common": "Bahrain",
       "official": "Kingdom of Bahrain"
     },
+    "names": {
+      "es": "Bahrein",
+      "fr": "Bahreïn",
+      "pt": "Bahrein"
+    },
     "flagEmoji": "🇧🇭",
     "region": "Asia",
     "subregion": "Western Asia",
@@ -721,6 +775,9 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Bangladesh",
       "official": "People's Republic of Bangladesh"
+    },
+    "names": {
+      "de": "Bangladesch"
     },
     "flagEmoji": "🇧🇩",
     "region": "Asia",
@@ -776,6 +833,9 @@ export const COUNTRIES: Country[] = [
       "common": "Barbados",
       "official": "Barbados"
     },
+    "names": {
+      "fr": "Barbade"
+    },
     "flagEmoji": "🇧🇧",
     "region": "Americas",
     "subregion": "Caribbean",
@@ -821,6 +881,11 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Belarus",
       "official": "Republic of Belarus"
+    },
+    "names": {
+      "es": "Bielorrusia",
+      "fr": "Biélorussie",
+      "pt": "Bielorússia"
     },
     "flagEmoji": "🇧🇾",
     "region": "Europe",
@@ -879,6 +944,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Belgium",
       "official": "Kingdom of Belgium"
+    },
+    "names": {
+      "es": "Bélgica",
+      "fr": "Belgique",
+      "de": "Belgien",
+      "pt": "Bélgica"
     },
     "flagEmoji": "🇧🇪",
     "region": "Europe",
@@ -942,6 +1013,9 @@ export const COUNTRIES: Country[] = [
       "common": "Belize",
       "official": "Belize"
     },
+    "names": {
+      "es": "Belice"
+    },
     "flagEmoji": "🇧🇿",
     "region": "Americas",
     "subregion": "Central America",
@@ -997,6 +1071,10 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Benin",
       "official": "Republic of Benin"
+    },
+    "names": {
+      "es": "Benín",
+      "fr": "Bénin"
     },
     "flagEmoji": "🇧🇯",
     "region": "Africa",
@@ -1062,6 +1140,11 @@ export const COUNTRIES: Country[] = [
       "common": "Bhutan",
       "official": "Kingdom of Bhutan"
     },
+    "names": {
+      "es": "Bután",
+      "fr": "Bhoutan",
+      "pt": "Butão"
+    },
     "flagEmoji": "🇧🇹",
     "region": "Asia",
     "subregion": "Southern Asia",
@@ -1120,6 +1203,11 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Bolivia",
       "official": "Plurinational State of Bolivia"
+    },
+    "names": {
+      "fr": "Bolivie",
+      "de": "Bolivien",
+      "pt": "Bolívia"
     },
     "flagEmoji": "🇧🇴",
     "region": "Americas",
@@ -1181,6 +1269,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Bosnia and Herzegovina",
       "official": "Bosnia and Herzegovina"
+    },
+    "names": {
+      "es": "Bosnia y Herzegovina",
+      "fr": "Bosnie-Herzégovine",
+      "de": "Bosnien und Herzegowina",
+      "pt": "Bósnia e Herzegovina"
     },
     "flagEmoji": "🇧🇦",
     "region": "Europe",
@@ -1299,6 +1393,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Brazil",
       "official": "Federative Republic of Brazil"
+    },
+    "names": {
+      "es": "Brasil",
+      "fr": "Brésil",
+      "de": "Brasilien",
+      "pt": "Brasil"
     },
     "flagEmoji": "🇧🇷",
     "region": "Americas",
@@ -1426,6 +1526,11 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Bulgaria",
       "official": "Republic of Bulgaria"
+    },
+    "names": {
+      "fr": "Bulgarie",
+      "de": "Bulgarien",
+      "pt": "Bulgária"
     },
     "flagEmoji": "🇧🇬",
     "region": "Europe",
@@ -1606,6 +1711,12 @@ export const COUNTRIES: Country[] = [
       "common": "Cambodia",
       "official": "Kingdom of Cambodia"
     },
+    "names": {
+      "es": "Camboya",
+      "fr": "Cambodge",
+      "de": "Kambodscha",
+      "pt": "Camboja"
+    },
     "flagEmoji": "🇰🇭",
     "region": "Asia",
     "subregion": "South-Eastern Asia",
@@ -1661,6 +1772,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Cameroon",
       "official": "Republic of Cameroon"
+    },
+    "names": {
+      "es": "Camerún",
+      "fr": "Cameroun",
+      "de": "Kamerun",
+      "pt": "Camarões"
     },
     "flagEmoji": "🇨🇲",
     "region": "Africa",
@@ -1725,6 +1842,11 @@ export const COUNTRIES: Country[] = [
       "common": "Canada",
       "official": "Canada"
     },
+    "names": {
+      "es": "Canadá",
+      "de": "Kanada",
+      "pt": "Canadá"
+    },
     "flagEmoji": "🇨🇦",
     "region": "Americas",
     "subregion": "North America",
@@ -1779,6 +1901,12 @@ export const COUNTRIES: Country[] = [
       "common": "Cape Verde",
       "official": "Republic of Cabo Verde"
     },
+    "names": {
+      "es": "Cabo Verde",
+      "fr": "Îles du Cap-Vert",
+      "de": "Kap Verde",
+      "pt": "Cabo Verde"
+    },
     "flagEmoji": "🇨🇻",
     "region": "Africa",
     "subregion": "Western Africa",
@@ -1828,6 +1956,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Central African Republic",
       "official": "Central African Republic"
+    },
+    "names": {
+      "es": "República Centroafricana",
+      "fr": "République centrafricaine",
+      "de": "Zentralafrikanische Republik",
+      "pt": "República Centro-Africana"
     },
     "flagEmoji": "🇨🇫",
     "region": "Africa",
@@ -1888,6 +2022,11 @@ export const COUNTRIES: Country[] = [
       "common": "Chad",
       "official": "Republic of Chad"
     },
+    "names": {
+      "fr": "Tchad",
+      "de": "Tschad",
+      "pt": "Chade"
+    },
     "flagEmoji": "🇹🇩",
     "region": "Africa",
     "subregion": "Middle Africa",
@@ -1947,6 +2086,9 @@ export const COUNTRIES: Country[] = [
       "common": "Chile",
       "official": "Republic of Chile"
     },
+    "names": {
+      "fr": "Chili"
+    },
     "flagEmoji": "🇨🇱",
     "region": "Americas",
     "subregion": "South America",
@@ -2001,6 +2143,9 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "China",
       "official": "People's Republic of China"
+    },
+    "names": {
+      "fr": "Chine"
     },
     "flagEmoji": "🇨🇳",
     "region": "Asia",
@@ -2080,6 +2225,11 @@ export const COUNTRIES: Country[] = [
       "common": "Colombia",
       "official": "Republic of Colombia"
     },
+    "names": {
+      "fr": "Colombie",
+      "de": "Kolumbien",
+      "pt": "Colômbia"
+    },
     "flagEmoji": "🇨🇴",
     "region": "Americas",
     "subregion": "South America",
@@ -2136,6 +2286,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Comoros",
       "official": "Union of the Comoros"
+    },
+    "names": {
+      "es": "Comoras",
+      "fr": "Comores",
+      "de": "Komoren",
+      "pt": "Comores"
     },
     "flagEmoji": "🇰🇲",
     "region": "Africa",
@@ -2239,6 +2395,12 @@ export const COUNTRIES: Country[] = [
       "common": "Croatia",
       "official": "Republic of Croatia"
     },
+    "names": {
+      "es": "Croacia",
+      "fr": "Croatie",
+      "de": "Kroatien",
+      "pt": "Croácia"
+    },
     "flagEmoji": "🇭🇷",
     "region": "Europe",
     "subregion": "Southeast Europe",
@@ -2296,6 +2458,9 @@ export const COUNTRIES: Country[] = [
       "common": "Cuba",
       "official": "Republic of Cuba"
     },
+    "names": {
+      "de": "Kuba"
+    },
     "flagEmoji": "🇨🇺",
     "region": "Americas",
     "subregion": "Caribbean",
@@ -2350,6 +2515,12 @@ export const COUNTRIES: Country[] = [
       "common": "Cyprus",
       "official": "Republic of Cyprus"
     },
+    "names": {
+      "es": "Chipre",
+      "fr": "Chypre",
+      "de": "Zypern",
+      "pt": "Chipre"
+    },
     "flagEmoji": "🇨🇾",
     "region": "Europe",
     "subregion": "Southern Europe",
@@ -2400,6 +2571,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Czechia",
       "official": "Czech Republic"
+    },
+    "names": {
+      "es": "Chequia",
+      "fr": "Tchéquie",
+      "de": "Tschechien",
+      "pt": "Chéquia"
     },
     "flagEmoji": "🇨🇿",
     "region": "Europe",
@@ -2458,6 +2635,12 @@ export const COUNTRIES: Country[] = [
       "common": "Denmark",
       "official": "Kingdom of Denmark"
     },
+    "names": {
+      "es": "Dinamarca",
+      "fr": "Danemark",
+      "de": "Dänemark",
+      "pt": "Dinamarca"
+    },
     "flagEmoji": "🇩🇰",
     "region": "Europe",
     "subregion": "Northern Europe",
@@ -2515,6 +2698,9 @@ export const COUNTRIES: Country[] = [
       "common": "Djibouti",
       "official": "Republic of Djibouti"
     },
+    "names": {
+      "de": "Dschibuti"
+    },
     "flagEmoji": "🇩🇯",
     "region": "Africa",
     "subregion": "Eastern Africa",
@@ -2567,6 +2753,9 @@ export const COUNTRIES: Country[] = [
       "common": "Dominica",
       "official": "Commonwealth of Dominica"
     },
+    "names": {
+      "fr": "Dominique"
+    },
     "flagEmoji": "🇩🇲",
     "region": "Americas",
     "subregion": "Caribbean",
@@ -2612,6 +2801,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Dominican Republic",
       "official": "Dominican Republic"
+    },
+    "names": {
+      "es": "República Dominicana",
+      "fr": "République dominicaine",
+      "de": "Dominikanische Republik",
+      "pt": "República Dominicana"
     },
     "flagEmoji": "🇩🇴",
     "region": "Americas",
@@ -2665,6 +2860,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "DR Congo",
       "official": "Democratic Republic of the Congo"
+    },
+    "names": {
+      "es": "Congo (Rep. Dem.)",
+      "fr": "Congo (Rép. dém.)",
+      "de": "Kongo (Dem. Rep.)",
+      "pt": "República Democrática do Congo"
     },
     "flagEmoji": "🇨🇩",
     "region": "Africa",
@@ -2727,6 +2928,10 @@ export const COUNTRIES: Country[] = [
       "common": "Ecuador",
       "official": "Republic of Ecuador"
     },
+    "names": {
+      "fr": "Équateur",
+      "pt": "Equador"
+    },
     "flagEmoji": "🇪🇨",
     "region": "Americas",
     "subregion": "South America",
@@ -2780,6 +2985,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Egypt",
       "official": "Arab Republic of Egypt"
+    },
+    "names": {
+      "es": "Egipto",
+      "fr": "Égypte",
+      "de": "Ägypten",
+      "pt": "Egito"
     },
     "flagEmoji": "🇪🇬",
     "region": "Africa",
@@ -2837,6 +3048,9 @@ export const COUNTRIES: Country[] = [
       "common": "El Salvador",
       "official": "Republic of El Salvador"
     },
+    "names": {
+      "fr": "Salvador"
+    },
     "flagEmoji": "🇸🇻",
     "region": "Americas",
     "subregion": "Central America",
@@ -2890,6 +3104,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Equatorial Guinea",
       "official": "Republic of Equatorial Guinea"
+    },
+    "names": {
+      "es": "Guinea Ecuatorial",
+      "fr": "Guinée équatoriale",
+      "de": "Äquatorialguinea",
+      "pt": "Guiné Equatorial"
     },
     "flagEmoji": "🇬🇶",
     "region": "Africa",
@@ -2951,6 +3171,10 @@ export const COUNTRIES: Country[] = [
       "common": "Eritrea",
       "official": "State of Eritrea"
     },
+    "names": {
+      "fr": "Érythrée",
+      "pt": "Eritreia"
+    },
     "flagEmoji": "🇪🇷",
     "region": "Africa",
     "subregion": "Eastern Africa",
@@ -3008,6 +3232,11 @@ export const COUNTRIES: Country[] = [
       "common": "Estonia",
       "official": "Republic of Estonia"
     },
+    "names": {
+      "fr": "Estonie",
+      "de": "Estland",
+      "pt": "Estónia"
+    },
     "flagEmoji": "🇪🇪",
     "region": "Europe",
     "subregion": "Northern Europe",
@@ -3061,6 +3290,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Eswatini",
       "official": "Kingdom of Eswatini"
+    },
+    "names": {
+      "es": "Suazilandia",
+      "fr": "Swaziland",
+      "de": "Swasiland",
+      "pt": "Suazilândia"
     },
     "flagEmoji": "🇸🇿",
     "region": "Africa",
@@ -3123,6 +3358,12 @@ export const COUNTRIES: Country[] = [
       "common": "Ethiopia",
       "official": "Federal Democratic Republic of Ethiopia"
     },
+    "names": {
+      "es": "Etiopía",
+      "fr": "Éthiopie",
+      "de": "Äthiopien",
+      "pt": "Etiópia"
+    },
     "flagEmoji": "🇪🇹",
     "region": "Africa",
     "subregion": "Eastern Africa",
@@ -3181,6 +3422,11 @@ export const COUNTRIES: Country[] = [
       "common": "Fiji",
       "official": "Republic of Fiji"
     },
+    "names": {
+      "es": "Fiyi",
+      "fr": "Fidji",
+      "de": "Fidschi"
+    },
     "flagEmoji": "🇫🇯",
     "region": "Oceania",
     "subregion": "Melanesia",
@@ -3237,6 +3483,12 @@ export const COUNTRIES: Country[] = [
       "common": "Finland",
       "official": "Republic of Finland"
     },
+    "names": {
+      "es": "Finlandia",
+      "fr": "Finlande",
+      "de": "Finnland",
+      "pt": "Finlândia"
+    },
     "flagEmoji": "🇫🇮",
     "region": "Europe",
     "subregion": "Northern Europe",
@@ -3292,6 +3544,11 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "France",
       "official": "French Republic"
+    },
+    "names": {
+      "es": "Francia",
+      "de": "Frankreich",
+      "pt": "França"
     },
     "flagEmoji": "🇫🇷",
     "region": "Europe",
@@ -3357,6 +3614,11 @@ export const COUNTRIES: Country[] = [
       "common": "Gabon",
       "official": "Gabonese Republic"
     },
+    "names": {
+      "es": "Gabón",
+      "de": "Gabun",
+      "pt": "Gabão"
+    },
     "flagEmoji": "🇬🇦",
     "region": "Africa",
     "subregion": "Middle Africa",
@@ -3420,6 +3682,10 @@ export const COUNTRIES: Country[] = [
       "common": "Gambia",
       "official": "Republic of the Gambia"
     },
+    "names": {
+      "fr": "Gambie",
+      "pt": "Gâmbia"
+    },
     "flagEmoji": "🇬🇲",
     "region": "Africa",
     "subregion": "Western Africa",
@@ -3472,6 +3738,11 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Georgia",
       "official": "Georgia"
+    },
+    "names": {
+      "fr": "Géorgie",
+      "de": "Georgien",
+      "pt": "Geórgia"
     },
     "flagEmoji": "🇬🇪",
     "region": "Asia",
@@ -3528,6 +3799,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Germany",
       "official": "Federal Republic of Germany"
+    },
+    "names": {
+      "es": "Alemania",
+      "fr": "Allemagne",
+      "de": "Deutschland",
+      "pt": "Alemanha"
     },
     "flagEmoji": "🇩🇪",
     "region": "Europe",
@@ -3594,6 +3871,9 @@ export const COUNTRIES: Country[] = [
       "common": "Ghana",
       "official": "Republic of Ghana"
     },
+    "names": {
+      "pt": "Gana"
+    },
     "flagEmoji": "🇬🇭",
     "region": "Africa",
     "subregion": "Western Africa",
@@ -3652,6 +3932,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Greece",
       "official": "Hellenic Republic"
+    },
+    "names": {
+      "es": "Grecia",
+      "fr": "Grèce",
+      "de": "Griechenland",
+      "pt": "Grécia"
     },
     "flagEmoji": "🇬🇷",
     "region": "Europe",
@@ -3712,6 +3998,10 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Grenada",
       "official": "Grenada"
+    },
+    "names": {
+      "fr": "Grenade",
+      "pt": "Granada"
     },
     "flagEmoji": "🇬🇩",
     "region": "Americas",
@@ -3811,6 +4101,10 @@ export const COUNTRIES: Country[] = [
       "common": "Guinea",
       "official": "Republic of Guinea"
     },
+    "names": {
+      "fr": "Guinée",
+      "pt": "Guiné"
+    },
     "flagEmoji": "🇬🇳",
     "region": "Africa",
     "subregion": "Western Africa",
@@ -3868,6 +4162,11 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Guinea-Bissau",
       "official": "Republic of Guinea-Bissau"
+    },
+    "names": {
+      "es": "Guinea-Bisáu",
+      "fr": "Guinée-Bissau",
+      "pt": "Guiné-Bissau"
     },
     "flagEmoji": "🇬🇼",
     "region": "Africa",
@@ -3932,6 +4231,9 @@ export const COUNTRIES: Country[] = [
       "common": "Guyana",
       "official": "Co-operative Republic of Guyana"
     },
+    "names": {
+      "pt": "Guiana"
+    },
     "flagEmoji": "🇬🇾",
     "region": "Americas",
     "subregion": "South America",
@@ -3990,6 +4292,10 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Haiti",
       "official": "Republic of Haiti"
+    },
+    "names": {
+      "es": "Haití",
+      "fr": "Haïti"
     },
     "flagEmoji": "🇭🇹",
     "region": "Americas",
@@ -4100,6 +4406,12 @@ export const COUNTRIES: Country[] = [
       "common": "Hungary",
       "official": "Hungary"
     },
+    "names": {
+      "es": "Hungría",
+      "fr": "Hongrie",
+      "de": "Ungarn",
+      "pt": "Hungria"
+    },
     "flagEmoji": "🇭🇺",
     "region": "Europe",
     "subregion": "Central Europe",
@@ -4159,6 +4471,12 @@ export const COUNTRIES: Country[] = [
       "common": "Iceland",
       "official": "Iceland"
     },
+    "names": {
+      "es": "Islandia",
+      "fr": "Islande",
+      "de": "Island",
+      "pt": "Islândia"
+    },
     "flagEmoji": "🇮🇸",
     "region": "Europe",
     "subregion": "Northern Europe",
@@ -4204,6 +4522,11 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "India",
       "official": "Republic of India"
+    },
+    "names": {
+      "fr": "Inde",
+      "de": "Indien",
+      "pt": "Índia"
     },
     "flagEmoji": "🇮🇳",
     "region": "Asia",
@@ -4265,6 +4588,11 @@ export const COUNTRIES: Country[] = [
       "common": "Indonesia",
       "official": "Republic of Indonesia"
     },
+    "names": {
+      "fr": "Indonésie",
+      "de": "Indonesien",
+      "pt": "Indonésia"
+    },
     "flagEmoji": "🇮🇩",
     "region": "Asia",
     "subregion": "South-Eastern Asia",
@@ -4319,6 +4647,9 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Iran",
       "official": "Islamic Republic of Iran"
+    },
+    "names": {
+      "pt": "Irão"
     },
     "flagEmoji": "🇮🇷",
     "region": "Asia",
@@ -4376,6 +4707,12 @@ export const COUNTRIES: Country[] = [
       "common": "Iraq",
       "official": "Republic of Iraq"
     },
+    "names": {
+      "es": "Irak",
+      "fr": "Irak",
+      "de": "Irak",
+      "pt": "Iraque"
+    },
     "flagEmoji": "🇮🇶",
     "region": "Asia",
     "subregion": "Western Asia",
@@ -4432,6 +4769,12 @@ export const COUNTRIES: Country[] = [
       "common": "Ireland",
       "official": "Republic of Ireland"
     },
+    "names": {
+      "es": "Irlanda",
+      "fr": "Irlande",
+      "de": "Irland",
+      "pt": "Irlanda"
+    },
     "flagEmoji": "🇮🇪",
     "region": "Europe",
     "subregion": "Northern Europe",
@@ -4485,6 +4828,9 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Israel",
       "official": "State of Israel"
+    },
+    "names": {
+      "fr": "Israël"
     },
     "flagEmoji": "🇮🇱",
     "region": "Asia",
@@ -4542,6 +4888,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Italy",
       "official": "Italian Republic"
+    },
+    "names": {
+      "es": "Italia",
+      "fr": "Italie",
+      "de": "Italien",
+      "pt": "Itália"
     },
     "flagEmoji": "🇮🇹",
     "region": "Europe",
@@ -4604,6 +4956,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Ivory Coast",
       "official": "Republic of Côte d'Ivoire"
+    },
+    "names": {
+      "es": "Costa de Marfil",
+      "fr": "Côte d'Ivoire",
+      "de": "Côte d'Ivoire",
+      "pt": "Costa do Marfim"
     },
     "flagEmoji": "🇨🇮",
     "region": "Africa",
@@ -4670,6 +5028,10 @@ export const COUNTRIES: Country[] = [
       "common": "Jamaica",
       "official": "Jamaica"
     },
+    "names": {
+      "fr": "Jamaïque",
+      "de": "Jamaika"
+    },
     "flagEmoji": "🇯🇲",
     "region": "Americas",
     "subregion": "Caribbean",
@@ -4724,6 +5086,11 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Japan",
       "official": "Japan"
+    },
+    "names": {
+      "es": "Japón",
+      "fr": "Japon",
+      "pt": "Japão"
     },
     "flagEmoji": "🇯🇵",
     "region": "Asia",
@@ -4780,6 +5147,12 @@ export const COUNTRIES: Country[] = [
       "common": "Jordan",
       "official": "Hashemite Kingdom of Jordan"
     },
+    "names": {
+      "es": "Jordania",
+      "fr": "Jordanie",
+      "de": "Jordanien",
+      "pt": "Jordânia"
+    },
     "flagEmoji": "🇯🇴",
     "region": "Asia",
     "subregion": "Western Asia",
@@ -4832,6 +5205,11 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Kazakhstan",
       "official": "Republic of Kazakhstan"
+    },
+    "names": {
+      "es": "Kazajistán",
+      "de": "Kasachstan",
+      "pt": "Cazaquistão"
     },
     "flagEmoji": "🇰🇿",
     "region": "Asia",
@@ -4895,6 +5273,11 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Kenya",
       "official": "Republic of Kenya"
+    },
+    "names": {
+      "es": "Kenia",
+      "de": "Kenia",
+      "pt": "Quénia"
     },
     "flagEmoji": "🇰🇪",
     "region": "Africa",
@@ -5006,6 +5389,9 @@ export const COUNTRIES: Country[] = [
       "common": "Kuwait",
       "official": "State of Kuwait"
     },
+    "names": {
+      "fr": "Koweït"
+    },
     "flagEmoji": "🇰🇼",
     "region": "Asia",
     "subregion": "Western Asia",
@@ -5067,6 +5453,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Kyrgyzstan",
       "official": "Kyrgyz Republic"
+    },
+    "names": {
+      "es": "Kirguizistán",
+      "fr": "Kirghizistan",
+      "de": "Kirgisistan",
+      "pt": "Quirguistão"
     },
     "flagEmoji": "🇰🇬",
     "region": "Asia",
@@ -5182,6 +5574,12 @@ export const COUNTRIES: Country[] = [
       "common": "Latvia",
       "official": "Republic of Latvia"
     },
+    "names": {
+      "es": "Letonia",
+      "fr": "Lettonie",
+      "de": "Lettland",
+      "pt": "Letónia"
+    },
     "flagEmoji": "🇱🇻",
     "region": "Europe",
     "subregion": "Northern Europe",
@@ -5238,6 +5636,12 @@ export const COUNTRIES: Country[] = [
       "common": "Lebanon",
       "official": "Lebanese Republic"
     },
+    "names": {
+      "es": "Líbano",
+      "fr": "Liban",
+      "de": "Libanon",
+      "pt": "Líbano"
+    },
     "flagEmoji": "🇱🇧",
     "region": "Asia",
     "subregion": "Western Asia",
@@ -5292,6 +5696,9 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Lesotho",
       "official": "Kingdom of Lesotho"
+    },
+    "names": {
+      "pt": "Lesoto"
     },
     "flagEmoji": "🇱🇸",
     "region": "Africa",
@@ -5348,6 +5755,9 @@ export const COUNTRIES: Country[] = [
       "common": "Liberia",
       "official": "Republic of Liberia"
     },
+    "names": {
+      "pt": "Libéria"
+    },
     "flagEmoji": "🇱🇷",
     "region": "Africa",
     "subregion": "Western Africa",
@@ -5402,6 +5812,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Libya",
       "official": "State of Libya"
+    },
+    "names": {
+      "es": "Libia",
+      "fr": "Libye",
+      "de": "Libyen",
+      "pt": "Líbia"
     },
     "flagEmoji": "🇱🇾",
     "region": "Africa",
@@ -5511,6 +5927,12 @@ export const COUNTRIES: Country[] = [
       "common": "Lithuania",
       "official": "Republic of Lithuania"
     },
+    "names": {
+      "es": "Lituania",
+      "fr": "Lituanie",
+      "de": "Litauen",
+      "pt": "Lituânia"
+    },
     "flagEmoji": "🇱🇹",
     "region": "Europe",
     "subregion": "Northern Europe",
@@ -5566,6 +5988,11 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Luxembourg",
       "official": "Grand Duchy of Luxembourg"
+    },
+    "names": {
+      "es": "Luxemburgo",
+      "de": "Luxemburg",
+      "pt": "Luxemburgo"
     },
     "flagEmoji": "🇱🇺",
     "region": "Europe",
@@ -5623,6 +6050,10 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Madagascar",
       "official": "Republic of Madagascar"
+    },
+    "names": {
+      "de": "Madagaskar",
+      "pt": "Madagáscar"
     },
     "flagEmoji": "🇲🇬",
     "region": "Africa",
@@ -5735,6 +6166,11 @@ export const COUNTRIES: Country[] = [
       "common": "Malaysia",
       "official": "Malaysia"
     },
+    "names": {
+      "es": "Malasia",
+      "fr": "Malaisie",
+      "pt": "Malásia"
+    },
     "flagEmoji": "🇲🇾",
     "region": "Asia",
     "subregion": "South-Eastern Asia",
@@ -5798,6 +6234,11 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Maldives",
       "official": "Republic of the Maldives"
+    },
+    "names": {
+      "es": "Maldivas",
+      "de": "Malediven",
+      "pt": "Maldivas"
     },
     "flagEmoji": "🇲🇻",
     "region": "Asia",
@@ -5900,6 +6341,9 @@ export const COUNTRIES: Country[] = [
       "common": "Malta",
       "official": "Republic of Malta"
     },
+    "names": {
+      "fr": "Malte"
+    },
     "flagEmoji": "🇲🇹",
     "region": "Europe",
     "subregion": "Southern Europe",
@@ -5947,6 +6391,12 @@ export const COUNTRIES: Country[] = [
       "common": "Marshall Islands",
       "official": "Republic of the Marshall Islands"
     },
+    "names": {
+      "es": "Islas Marshall",
+      "fr": "Îles Marshall",
+      "de": "Marshallinseln",
+      "pt": "Ilhas Marshall"
+    },
     "flagEmoji": "🇲🇭",
     "region": "Oceania",
     "subregion": "Micronesia",
@@ -5993,6 +6443,11 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Mauritania",
       "official": "Islamic Republic of Mauritania"
+    },
+    "names": {
+      "fr": "Mauritanie",
+      "de": "Mauretanien",
+      "pt": "Mauritânia"
     },
     "flagEmoji": "🇲🇷",
     "region": "Africa",
@@ -6044,6 +6499,11 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Mauritius",
       "official": "Republic of Mauritius"
+    },
+    "names": {
+      "es": "Mauricio",
+      "fr": "Île Maurice",
+      "pt": "Maurício"
     },
     "flagEmoji": "🇲🇺",
     "region": "Africa",
@@ -6101,6 +6561,12 @@ export const COUNTRIES: Country[] = [
       "common": "Mexico",
       "official": "United Mexican States"
     },
+    "names": {
+      "es": "México",
+      "fr": "Mexique",
+      "de": "Mexiko",
+      "pt": "México"
+    },
     "flagEmoji": "🇲🇽",
     "region": "Americas",
     "subregion": "North America",
@@ -6156,6 +6622,11 @@ export const COUNTRIES: Country[] = [
       "common": "Micronesia",
       "official": "Federated States of Micronesia"
     },
+    "names": {
+      "fr": "Micronésie",
+      "de": "Mikronesien",
+      "pt": "Micronésia"
+    },
     "flagEmoji": "🇫🇲",
     "region": "Oceania",
     "subregion": "Micronesia",
@@ -6201,6 +6672,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Moldova",
       "official": "Republic of Moldova"
+    },
+    "names": {
+      "es": "Moldavia",
+      "fr": "Moldavie",
+      "de": "Moldawien",
+      "pt": "Moldávia"
     },
     "flagEmoji": "🇲🇩",
     "region": "Europe",
@@ -6251,6 +6728,10 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Monaco",
       "official": "Principality of Monaco"
+    },
+    "names": {
+      "es": "Mónaco",
+      "pt": "Mónaco"
     },
     "flagEmoji": "🇲🇨",
     "region": "Europe",
@@ -6305,6 +6786,11 @@ export const COUNTRIES: Country[] = [
       "common": "Mongolia",
       "official": "Mongolia"
     },
+    "names": {
+      "fr": "Mongolie",
+      "de": "Mongolei",
+      "pt": "Mongólia"
+    },
     "flagEmoji": "🇲🇳",
     "region": "Asia",
     "subregion": "Eastern Asia",
@@ -6358,6 +6844,9 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Montenegro",
       "official": "Montenegro"
+    },
+    "names": {
+      "fr": "Monténégro"
     },
     "flagEmoji": "🇲🇪",
     "region": "Europe",
@@ -6415,6 +6904,12 @@ export const COUNTRIES: Country[] = [
       "common": "Morocco",
       "official": "Kingdom of Morocco"
     },
+    "names": {
+      "es": "Marruecos",
+      "fr": "Maroc",
+      "de": "Marokko",
+      "pt": "Marrocos"
+    },
     "flagEmoji": "🇲🇦",
     "region": "Africa",
     "subregion": "Northern Africa",
@@ -6466,6 +6961,10 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Mozambique",
       "official": "Republic of Mozambique"
+    },
+    "names": {
+      "de": "Mosambik",
+      "pt": "Moçambique"
     },
     "flagEmoji": "🇲🇿",
     "region": "Africa",
@@ -6533,6 +7032,9 @@ export const COUNTRIES: Country[] = [
       "common": "Myanmar",
       "official": "Republic of the Union of Myanmar"
     },
+    "names": {
+      "fr": "Birmanie"
+    },
     "flagEmoji": "🇲🇲",
     "region": "Asia",
     "subregion": "South-Eastern Asia",
@@ -6597,6 +7099,10 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Namibia",
       "official": "Republic of Namibia"
+    },
+    "names": {
+      "fr": "Namibie",
+      "pt": "Namíbia"
     },
     "flagEmoji": "🇳🇦",
     "region": "Africa",
@@ -6722,6 +7228,9 @@ export const COUNTRIES: Country[] = [
       "common": "Nepal",
       "official": "Federal Democratic Republic of Nepal"
     },
+    "names": {
+      "fr": "Népal"
+    },
     "flagEmoji": "🇳🇵",
     "region": "Asia",
     "subregion": "Southern Asia",
@@ -6779,6 +7288,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Netherlands",
       "official": "Kingdom of the Netherlands"
+    },
+    "names": {
+      "es": "Países Bajos",
+      "fr": "Pays-Bas",
+      "de": "Niederlande",
+      "pt": "Holanda"
     },
     "flagEmoji": "🇳🇱",
     "region": "Europe",
@@ -6838,6 +7353,12 @@ export const COUNTRIES: Country[] = [
       "common": "New Zealand",
       "official": "New Zealand"
     },
+    "names": {
+      "es": "Nueva Zelanda",
+      "fr": "Nouvelle-Zélande",
+      "de": "Neuseeland",
+      "pt": "Nova Zelândia"
+    },
     "flagEmoji": "🇳🇿",
     "region": "Oceania",
     "subregion": "Australia and New Zealand",
@@ -6889,6 +7410,9 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Nicaragua",
       "official": "Republic of Nicaragua"
+    },
+    "names": {
+      "pt": "Nicarágua"
     },
     "flagEmoji": "🇳🇮",
     "region": "Americas",
@@ -6943,6 +7467,10 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Niger",
       "official": "Republic of Niger"
+    },
+    "names": {
+      "es": "Níger",
+      "pt": "Níger"
     },
     "flagEmoji": "🇳🇪",
     "region": "Africa",
@@ -6999,6 +7527,10 @@ export const COUNTRIES: Country[] = [
       "common": "Nigeria",
       "official": "Federal Republic of Nigeria"
     },
+    "names": {
+      "fr": "Nigéria",
+      "pt": "Nigéria"
+    },
     "flagEmoji": "🇳🇬",
     "region": "Africa",
     "subregion": "Western Africa",
@@ -7054,6 +7586,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "North Korea",
       "official": "Democratic People's Republic of Korea"
+    },
+    "names": {
+      "es": "Corea del Norte",
+      "fr": "Corée du Nord",
+      "de": "Nordkorea",
+      "pt": "Coreia do Norte"
     },
     "flagEmoji": "🇰🇵",
     "region": "Asia",
@@ -7114,6 +7652,12 @@ export const COUNTRIES: Country[] = [
       "common": "North Macedonia",
       "official": "Republic of North Macedonia"
     },
+    "names": {
+      "es": "Macedonia del Norte",
+      "fr": "Macédoine du Nord",
+      "de": "Nordmazedonien",
+      "pt": "Macedónia do Norte"
+    },
     "flagEmoji": "🇲🇰",
     "region": "Europe",
     "subregion": "Southeast Europe",
@@ -7169,6 +7713,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Norway",
       "official": "Kingdom of Norway"
+    },
+    "names": {
+      "es": "Noruega",
+      "fr": "Norvège",
+      "de": "Norwegen",
+      "pt": "Noruega"
     },
     "flagEmoji": "🇳🇴",
     "region": "Europe",
@@ -7231,6 +7781,10 @@ export const COUNTRIES: Country[] = [
       "common": "Oman",
       "official": "Sultanate of Oman"
     },
+    "names": {
+      "es": "Omán",
+      "pt": "Omã"
+    },
     "flagEmoji": "🇴🇲",
     "region": "Asia",
     "subregion": "Western Asia",
@@ -7290,6 +7844,10 @@ export const COUNTRIES: Country[] = [
       "common": "Pakistan",
       "official": "Islamic Republic of Pakistan"
     },
+    "names": {
+      "es": "Pakistán",
+      "pt": "Paquistão"
+    },
     "flagEmoji": "🇵🇰",
     "region": "Asia",
     "subregion": "Southern Asia",
@@ -7343,6 +7901,9 @@ export const COUNTRIES: Country[] = [
       "common": "Palau",
       "official": "Republic of Palau"
     },
+    "names": {
+      "fr": "Palaos (Palau)"
+    },
     "flagEmoji": "🇵🇼",
     "region": "Oceania",
     "subregion": "Micronesia",
@@ -7393,6 +7954,10 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Panama",
       "official": "Republic of Panama"
+    },
+    "names": {
+      "es": "Panamá",
+      "pt": "Panamá"
     },
     "flagEmoji": "🇵🇦",
     "region": "Americas",
@@ -7453,6 +8018,12 @@ export const COUNTRIES: Country[] = [
       "common": "Papua New Guinea",
       "official": "Independent State of Papua New Guinea"
     },
+    "names": {
+      "es": "Papúa Nueva Guinea",
+      "fr": "Papouasie-Nouvelle-Guinée",
+      "de": "Papua-Neuguinea",
+      "pt": "Papua Nova Guiné"
+    },
     "flagEmoji": "🇵🇬",
     "region": "Oceania",
     "subregion": "Melanesia",
@@ -7503,6 +8074,9 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Paraguay",
       "official": "Republic of Paraguay"
+    },
+    "names": {
+      "pt": "Paraguai"
     },
     "flagEmoji": "🇵🇾",
     "region": "Americas",
@@ -7555,6 +8129,11 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Peru",
       "official": "Republic of Peru"
+    },
+    "names": {
+      "es": "Perú",
+      "fr": "Pérou",
+      "pt": "Perú"
     },
     "flagEmoji": "🇵🇪",
     "region": "Americas",
@@ -7611,6 +8190,11 @@ export const COUNTRIES: Country[] = [
       "common": "Philippines",
       "official": "Republic of the Philippines"
     },
+    "names": {
+      "es": "Filipinas",
+      "de": "Philippinen",
+      "pt": "Filipinas"
+    },
     "flagEmoji": "🇵🇭",
     "region": "Asia",
     "subregion": "South-Eastern Asia",
@@ -7661,6 +8245,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Poland",
       "official": "Republic of Poland"
+    },
+    "names": {
+      "es": "Polonia",
+      "fr": "Pologne",
+      "de": "Polen",
+      "pt": "Polónia"
     },
     "flagEmoji": "🇵🇱",
     "region": "Europe",
@@ -7774,6 +8364,11 @@ export const COUNTRIES: Country[] = [
       "common": "Qatar",
       "official": "State of Qatar"
     },
+    "names": {
+      "es": "Catar",
+      "de": "Katar",
+      "pt": "Catar"
+    },
     "flagEmoji": "🇶🇦",
     "region": "Asia",
     "subregion": "Western Asia",
@@ -7831,6 +8426,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Republic of the Congo",
       "official": "Republic of the Congo"
+    },
+    "names": {
+      "es": "Congo",
+      "fr": "Congo",
+      "de": "Kongo",
+      "pt": "Congo"
     },
     "flagEmoji": "🇨🇬",
     "region": "Africa",
@@ -7891,6 +8492,12 @@ export const COUNTRIES: Country[] = [
       "common": "Romania",
       "official": "Romania"
     },
+    "names": {
+      "es": "Rumania",
+      "fr": "Roumanie",
+      "de": "Rumänien",
+      "pt": "Roménia"
+    },
     "flagEmoji": "🇷🇴",
     "region": "Europe",
     "subregion": "Southeast Europe",
@@ -7943,6 +8550,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Russia",
       "official": "Russian Federation"
+    },
+    "names": {
+      "es": "Rusia",
+      "fr": "Russie",
+      "de": "Russland",
+      "pt": "Rússia"
     },
     "flagEmoji": "🇷🇺",
     "region": "Europe",
@@ -8016,6 +8629,11 @@ export const COUNTRIES: Country[] = [
       "common": "Rwanda",
       "official": "Republic of Rwanda"
     },
+    "names": {
+      "es": "Ruanda",
+      "de": "Ruanda",
+      "pt": "Ruanda"
+    },
     "flagEmoji": "🇷🇼",
     "region": "Africa",
     "subregion": "Eastern Africa",
@@ -8070,6 +8688,12 @@ export const COUNTRIES: Country[] = [
       "common": "Saint Kitts and Nevis",
       "official": "Federation of Saint Christopher and Nevis"
     },
+    "names": {
+      "es": "San Cristóbal y Nieves",
+      "fr": "Saint-Christophe-et-Niévès",
+      "de": "St. Kitts und Nevis",
+      "pt": "São Cristóvão e Nevis"
+    },
     "flagEmoji": "🇰🇳",
     "region": "Americas",
     "subregion": "Caribbean",
@@ -8115,6 +8739,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Saint Lucia",
       "official": "Saint Lucia"
+    },
+    "names": {
+      "es": "Santa Lucía",
+      "fr": "Sainte-Lucie",
+      "de": "St. Lucia",
+      "pt": "Santa Lúcia"
     },
     "flagEmoji": "🇱🇨",
     "region": "Americas",
@@ -8165,6 +8795,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Saint Vincent and the Grenadines",
       "official": "Saint Vincent and the Grenadines"
+    },
+    "names": {
+      "es": "San Vicente y Granadinas",
+      "fr": "Saint-Vincent-et-les-Grenadines",
+      "de": "St. Vincent und die Grenadinen",
+      "pt": "São Vincente e Granadinas"
     },
     "flagEmoji": "🇻🇨",
     "region": "Americas",
@@ -8259,6 +8895,9 @@ export const COUNTRIES: Country[] = [
       "common": "San Marino",
       "official": "Most Serene Republic of San Marino"
     },
+    "names": {
+      "fr": "Saint-Marin"
+    },
     "flagEmoji": "🇸🇲",
     "region": "Europe",
     "subregion": "Southern Europe",
@@ -8312,6 +8951,12 @@ export const COUNTRIES: Country[] = [
       "common": "São Tomé and Príncipe",
       "official": "Democratic Republic of São Tomé and Príncipe"
     },
+    "names": {
+      "es": "Santo Tomé y Príncipe",
+      "fr": "São Tomé et Príncipe",
+      "de": "São Tomé und Príncipe",
+      "pt": "São Tomé e Príncipe"
+    },
     "flagEmoji": "🇸🇹",
     "region": "Africa",
     "subregion": "Middle Africa",
@@ -8361,6 +9006,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Saudi Arabia",
       "official": "Kingdom of Saudi Arabia"
+    },
+    "names": {
+      "es": "Arabia Saudí",
+      "fr": "Arabie Saoudite",
+      "de": "Saudi-Arabien",
+      "pt": "Arábia Saudita"
     },
     "flagEmoji": "🇸🇦",
     "region": "Asia",
@@ -8422,6 +9073,9 @@ export const COUNTRIES: Country[] = [
       "common": "Senegal",
       "official": "Republic of Senegal"
     },
+    "names": {
+      "fr": "Sénégal"
+    },
     "flagEmoji": "🇸🇳",
     "region": "Africa",
     "subregion": "Western Africa",
@@ -8474,6 +9128,11 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Serbia",
       "official": "Republic of Serbia"
+    },
+    "names": {
+      "fr": "Serbie",
+      "de": "Serbien",
+      "pt": "Sérvia"
     },
     "flagEmoji": "🇷🇸",
     "region": "Europe",
@@ -8535,6 +9194,10 @@ export const COUNTRIES: Country[] = [
       "common": "Seychelles",
       "official": "Republic of Seychelles"
     },
+    "names": {
+      "de": "Seychellen",
+      "pt": "Seicheles"
+    },
     "flagEmoji": "🇸🇨",
     "region": "Africa",
     "subregion": "Eastern Africa",
@@ -8582,6 +9245,9 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Sierra Leone",
       "official": "Republic of Sierra Leone"
+    },
+    "names": {
+      "pt": "Serra Leoa"
     },
     "flagEmoji": "🇸🇱",
     "region": "Africa",
@@ -8636,6 +9302,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Singapore",
       "official": "Republic of Singapore"
+    },
+    "names": {
+      "es": "Singapur",
+      "fr": "Singapour",
+      "de": "Singapur",
+      "pt": "Singapura"
     },
     "flagEmoji": "🇸🇬",
     "region": "Asia",
@@ -8700,6 +9372,12 @@ export const COUNTRIES: Country[] = [
       "common": "Slovakia",
       "official": "Slovak Republic"
     },
+    "names": {
+      "es": "Eslovaquia",
+      "fr": "Slovaquie",
+      "de": "Slowakei",
+      "pt": "Eslováquia"
+    },
     "flagEmoji": "🇸🇰",
     "region": "Europe",
     "subregion": "Central Europe",
@@ -8757,6 +9435,12 @@ export const COUNTRIES: Country[] = [
       "common": "Slovenia",
       "official": "Republic of Slovenia"
     },
+    "names": {
+      "es": "Eslovenia",
+      "fr": "Slovénie",
+      "de": "Slowenien",
+      "pt": "Eslovénia"
+    },
     "flagEmoji": "🇸🇮",
     "region": "Europe",
     "subregion": "Central Europe",
@@ -8813,6 +9497,12 @@ export const COUNTRIES: Country[] = [
       "common": "Solomon Islands",
       "official": "Solomon Islands"
     },
+    "names": {
+      "es": "Islas Salomón",
+      "fr": "Îles Salomon",
+      "de": "Salomonen",
+      "pt": "Ilhas Salomão"
+    },
     "flagEmoji": "🇸🇧",
     "region": "Oceania",
     "subregion": "Melanesia",
@@ -8858,6 +9548,10 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Somalia",
       "official": "Federal Republic of Somalia"
+    },
+    "names": {
+      "fr": "Somalie",
+      "pt": "Somália"
     },
     "flagEmoji": "🇸🇴",
     "region": "Africa",
@@ -8910,6 +9604,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "South Africa",
       "official": "Republic of South Africa"
+    },
+    "names": {
+      "es": "Sudáfrica",
+      "fr": "Afrique du Sud",
+      "de": "Südafrika",
+      "pt": "África do Sul"
     },
     "flagEmoji": "🇿🇦",
     "region": "Africa",
@@ -8981,6 +9681,12 @@ export const COUNTRIES: Country[] = [
       "common": "South Korea",
       "official": "Republic of Korea"
     },
+    "names": {
+      "es": "Corea del Sur",
+      "fr": "Corée du Sud",
+      "de": "Südkorea",
+      "pt": "Coreia do Sul"
+    },
     "flagEmoji": "🇰🇷",
     "region": "Asia",
     "subregion": "Eastern Asia",
@@ -9038,6 +9744,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "South Sudan",
       "official": "Republic of South Sudan"
+    },
+    "names": {
+      "es": "Sudán del Sur",
+      "fr": "Soudan du Sud",
+      "de": "Südsudan",
+      "pt": "Sudão do Sul"
     },
     "flagEmoji": "🇸🇸",
     "region": "Africa",
@@ -9100,6 +9812,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Spain",
       "official": "Kingdom of Spain"
+    },
+    "names": {
+      "es": "España",
+      "fr": "Espagne",
+      "de": "Spanien",
+      "pt": "Espanha"
     },
     "flagEmoji": "🇪🇸",
     "region": "Europe",
@@ -9218,6 +9936,11 @@ export const COUNTRIES: Country[] = [
       "common": "Sudan",
       "official": "Republic of the Sudan"
     },
+    "names": {
+      "es": "Sudán",
+      "fr": "Soudan",
+      "pt": "Sudão"
+    },
     "flagEmoji": "🇸🇩",
     "region": "Africa",
     "subregion": "Northern Africa",
@@ -9277,6 +10000,10 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Suriname",
       "official": "Republic of Suriname"
+    },
+    "names": {
+      "es": "Surinam",
+      "fr": "Surinam"
     },
     "flagEmoji": "🇸🇷",
     "region": "Americas",
@@ -9340,6 +10067,12 @@ export const COUNTRIES: Country[] = [
       "common": "Sweden",
       "official": "Kingdom of Sweden"
     },
+    "names": {
+      "es": "Suecia",
+      "fr": "Suède",
+      "de": "Schweden",
+      "pt": "Suécia"
+    },
     "flagEmoji": "🇸🇪",
     "region": "Europe",
     "subregion": "Northern Europe",
@@ -9397,6 +10130,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Switzerland",
       "official": "Swiss Confederation"
+    },
+    "names": {
+      "es": "Suiza",
+      "fr": "Suisse",
+      "de": "Schweiz",
+      "pt": "Suíça"
     },
     "flagEmoji": "🇨🇭",
     "region": "Europe",
@@ -9462,6 +10201,12 @@ export const COUNTRIES: Country[] = [
       "common": "Syria",
       "official": "Syrian Arab Republic"
     },
+    "names": {
+      "es": "Siria",
+      "fr": "Syrie",
+      "de": "Syrien",
+      "pt": "Síria"
+    },
     "flagEmoji": "🇸🇾",
     "region": "Asia",
     "subregion": "Western Asia",
@@ -9520,6 +10265,12 @@ export const COUNTRIES: Country[] = [
       "common": "Tajikistan",
       "official": "Republic of Tajikistan"
     },
+    "names": {
+      "es": "Tayikistán",
+      "fr": "Tadjikistan",
+      "de": "Tadschikistan",
+      "pt": "Tajiquistão"
+    },
     "flagEmoji": "🇹🇯",
     "region": "Asia",
     "subregion": "Central Asia",
@@ -9572,6 +10323,11 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Tanzania",
       "official": "United Republic of Tanzania"
+    },
+    "names": {
+      "fr": "Tanzanie",
+      "de": "Tansania",
+      "pt": "Tanzânia"
     },
     "flagEmoji": "🇹🇿",
     "region": "Africa",
@@ -9634,6 +10390,11 @@ export const COUNTRIES: Country[] = [
       "common": "Thailand",
       "official": "Kingdom of Thailand"
     },
+    "names": {
+      "es": "Tailandia",
+      "fr": "Thaïlande",
+      "pt": "Tailândia"
+    },
     "flagEmoji": "🇹🇭",
     "region": "Asia",
     "subregion": "South-Eastern Asia",
@@ -9690,6 +10451,11 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Timor-Leste",
       "official": "Democratic Republic of Timor-Leste"
+    },
+    "names": {
+      "es": "Timor Oriental",
+      "fr": "Timor oriental",
+      "de": "Osttimor"
     },
     "flagEmoji": "🇹🇱",
     "region": "Asia",
@@ -9851,6 +10617,12 @@ export const COUNTRIES: Country[] = [
       "common": "Trinidad and Tobago",
       "official": "Republic of Trinidad and Tobago"
     },
+    "names": {
+      "es": "Trinidad y Tobago",
+      "fr": "Trinité-et-Tobago",
+      "de": "Trinidad und Tobago",
+      "pt": "Trinidade e Tobago"
+    },
     "flagEmoji": "🇹🇹",
     "region": "Americas",
     "subregion": "Caribbean",
@@ -9905,6 +10677,12 @@ export const COUNTRIES: Country[] = [
       "common": "Tunisia",
       "official": "Tunisian Republic"
     },
+    "names": {
+      "es": "Túnez",
+      "fr": "Tunisie",
+      "de": "Tunesien",
+      "pt": "Tunísia"
+    },
     "flagEmoji": "🇹🇳",
     "region": "Africa",
     "subregion": "Northern Africa",
@@ -9954,6 +10732,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Türkiye",
       "official": "Republic of Türkiye"
+    },
+    "names": {
+      "es": "Turquía",
+      "fr": "Turquie",
+      "de": "Türkei",
+      "pt": "Turquia"
     },
     "flagEmoji": "🇹🇷",
     "region": "Asia",
@@ -10010,6 +10794,11 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Turkmenistan",
       "official": "Turkmenistan"
+    },
+    "names": {
+      "es": "Turkmenistán",
+      "fr": "Turkménistan",
+      "pt": "Turquemenistão"
     },
     "flagEmoji": "🇹🇲",
     "region": "Asia",
@@ -10120,6 +10909,9 @@ export const COUNTRIES: Country[] = [
       "common": "Uganda",
       "official": "Republic of Uganda"
     },
+    "names": {
+      "fr": "Ouganda"
+    },
     "flagEmoji": "🇺🇬",
     "region": "Africa",
     "subregion": "Eastern Africa",
@@ -10177,6 +10969,10 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Ukraine",
       "official": "Ukraine"
+    },
+    "names": {
+      "es": "Ucrania",
+      "pt": "Ucrânia"
     },
     "flagEmoji": "🇺🇦",
     "region": "Europe",
@@ -10238,6 +11034,12 @@ export const COUNTRIES: Country[] = [
       "common": "United Arab Emirates",
       "official": "United Arab Emirates"
     },
+    "names": {
+      "es": "Emiratos Árabes Unidos",
+      "fr": "Émirats arabes unis",
+      "de": "Vereinigte Arabische Emirate",
+      "pt": "Emirados Árabes Unidos"
+    },
     "flagEmoji": "🇦🇪",
     "region": "Asia",
     "subregion": "Western Asia",
@@ -10297,6 +11099,12 @@ export const COUNTRIES: Country[] = [
       "common": "United Kingdom",
       "official": "United Kingdom of Great Britain and Northern Ireland"
     },
+    "names": {
+      "es": "Reino Unido",
+      "fr": "Royaume-Uni",
+      "de": "Vereinigtes Königreich",
+      "pt": "Reino Unido"
+    },
     "flagEmoji": "🇬🇧",
     "region": "Europe",
     "subregion": "Northern Europe",
@@ -10354,6 +11162,12 @@ export const COUNTRIES: Country[] = [
       "common": "United States",
       "official": "United States of America"
     },
+    "names": {
+      "es": "Estados Unidos",
+      "fr": "États-Unis",
+      "de": "Vereinigte Staaten",
+      "pt": "Estados Unidos"
+    },
     "flagEmoji": "🇺🇸",
     "region": "Americas",
     "subregion": "North America",
@@ -10408,6 +11222,9 @@ export const COUNTRIES: Country[] = [
       "common": "Uruguay",
       "official": "Oriental Republic of Uruguay"
     },
+    "names": {
+      "pt": "Uruguai"
+    },
     "flagEmoji": "🇺🇾",
     "region": "Americas",
     "subregion": "South America",
@@ -10461,6 +11278,12 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Uzbekistan",
       "official": "Republic of Uzbekistan"
+    },
+    "names": {
+      "es": "Uzbekistán",
+      "fr": "Ouzbékistan",
+      "de": "Usbekistan",
+      "pt": "Uzbequistão"
     },
     "flagEmoji": "🇺🇿",
     "region": "Asia",
@@ -10568,6 +11391,12 @@ export const COUNTRIES: Country[] = [
       "common": "Vatican City",
       "official": "Vatican City State"
     },
+    "names": {
+      "es": "Ciudad del Vaticano",
+      "fr": "Cité du Vatican",
+      "de": "Vatikanstadt",
+      "pt": "Cidade do Vaticano"
+    },
     "flagEmoji": "🇻🇦",
     "region": "Europe",
     "subregion": "Southern Europe",
@@ -10673,6 +11502,10 @@ export const COUNTRIES: Country[] = [
       "common": "Vietnam",
       "official": "Socialist Republic of Vietnam"
     },
+    "names": {
+      "fr": "Viêt Nam",
+      "pt": "Vietname"
+    },
     "flagEmoji": "🇻🇳",
     "region": "Asia",
     "subregion": "South-Eastern Asia",
@@ -10736,6 +11569,11 @@ export const COUNTRIES: Country[] = [
       "common": "Yemen",
       "official": "Republic of Yemen"
     },
+    "names": {
+      "fr": "Yémen",
+      "de": "Jemen",
+      "pt": "Iémen"
+    },
     "flagEmoji": "🇾🇪",
     "region": "Asia",
     "subregion": "Western Asia",
@@ -10785,6 +11623,11 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Zambia",
       "official": "Republic of Zambia"
+    },
+    "names": {
+      "fr": "Zambie",
+      "de": "Sambia",
+      "pt": "Zâmbia"
     },
     "flagEmoji": "🇿🇲",
     "region": "Africa",
@@ -10841,6 +11684,10 @@ export const COUNTRIES: Country[] = [
     "name": {
       "common": "Zimbabwe",
       "official": "Republic of Zimbabwe"
+    },
+    "names": {
+      "es": "Zimbabue",
+      "de": "Simbabwe"
     },
     "flagEmoji": "🇿🇼",
     "region": "Africa",

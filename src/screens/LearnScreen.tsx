@@ -5,7 +5,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { GradientBackground, AnimatedPressable } from "../components/ui/Primitives";
 import { useTheme } from "../theme/ThemeProvider";
-import { fontFamily } from "../theme/tokens";
+import { fontFamily, DENSE_TEXT_MAX_SCALE } from "../theme/tokens";
+import { Flag } from "../components/ui/Flag";
 import { DAILY_QUIZ_LENGTH, dailyNumber } from "../quiz/daily";
 import { progressStore } from "../services/progressStore";
 import { dailyStore } from "../services/dailyStore";
@@ -15,9 +16,11 @@ import { COUNTRIES } from "../data/countries";
 import { QUIZ_CATEGORIES, type QuizCategory } from "../quiz/types";
 import type { ProgressRecord } from "../quiz/types";
 import type { DailyState } from "../gamification/types";
+import { useT } from "../i18n/useT";
 
 export default function LearnScreen() {
   const { colors, type, space, radius } = useTheme();
+  const t = useT();
   const router = useRouter();
   const [records, setRecords] = useState<ProgressRecord[] | null>(null);
   const [daily, setDaily] = useState<DailyState | null>(null);
@@ -56,27 +59,27 @@ export default function LearnScreen() {
       <SafeAreaView style={{ flex: 1 }} edges={["top", "left", "right"]}>
         <ScrollView contentContainerStyle={{ padding: space.lg, paddingBottom: space.xxl }}>
           <Text accessibilityRole="header" style={[type.hero, { color: colors.textPrimary, fontSize: 30 }]}>
-            Learn
+            {t("tabs.learn")}
           </Text>
           <Text style={[type.subtitle, { color: colors.textMuted, marginTop: 2, marginBottom: space.lg }]}>
-            Flags, capitals, shapes, and more — spaced out so it sticks
+            {t("learn.tagline")}
           </Text>
 
           {stats && (
             <View style={{ flexDirection: "row", gap: space.sm, marginBottom: space.lg }}>
-              <StatPill label="Started" value={String(stats.countriesStarted)} />
-              <StatPill label="Mastered" value={String(stats.countriesMastered)} />
-              <StatPill label="Accuracy" value={stats.totalAnswered ? `${stats.accuracy}%` : "—"} />
+              <StatPill label={t("learn.started")} value={String(stats.countriesStarted)} />
+              <StatPill label={t("learn.mastered")} value={String(stats.countriesMastered)} />
+              <StatPill label={t("learn.accuracy")} value={stats.totalAnswered ? `${stats.accuracy}%` : "—"} />
             </View>
           )}
 
-          <Text style={[type.section, { color: colors.textMuted, marginBottom: space.sm }]}>TODAY</Text>
+          <Text maxFontSizeMultiplier={DENSE_TEXT_MAX_SCALE} style={[type.section, { color: colors.textMuted, marginBottom: space.sm }]}>{t("learn.today").toUpperCase()}</Text>
 
           {countryOfDay && (
             <Pressable
               onPress={() => router.push(`/country/${countryOfDay.id}`)}
               accessibilityRole="button"
-              accessibilityLabel={`Country of the day: ${countryOfDay.name.common}`}
+              accessibilityLabel={`${t("learn.countryOfDay")}: ${t.country(countryOfDay)}`}
             >
               <View
                 style={{
@@ -90,10 +93,10 @@ export default function LearnScreen() {
                   marginBottom: space.sm,
                 }}
               >
-                <Text style={{ fontSize: 30, marginRight: space.md }}>{countryOfDay.flagEmoji}</Text>
+                <Flag cca2={countryOfDay.cca2} width={42} style={{ marginRight: space.md }} />
                 <View style={{ flex: 1 }}>
-                  <Text style={[type.label, { color: colors.accent }]}>COUNTRY OF THE DAY</Text>
-                  <Text style={[type.body, { color: colors.textPrimary, marginTop: 2 }]}>{countryOfDay.name.common}</Text>
+                  <Text maxFontSizeMultiplier={DENSE_TEXT_MAX_SCALE} style={[type.label, { color: colors.accent }]}>{t("learn.countryOfDay").toUpperCase()}</Text>
+                  <Text style={[type.body, { color: colors.textPrimary, marginTop: 2 }]}>{t.country(countryOfDay)}</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
               </View>
@@ -105,7 +108,7 @@ export default function LearnScreen() {
               style={{ flex: 1 }}
               onPress={() => router.push("/quiz/mixed?daily=1")}
               accessibilityRole="button"
-              accessibilityLabel={`Daily quiz, the same ${DAILY_QUIZ_LENGTH} questions for everyone today${daily?.dailyQuizDone ? ", done — see and share your result" : ""}`}
+              accessibilityLabel={daily?.dailyQuizDone ? t("learn.dailyDoneA11y", { count: DAILY_QUIZ_LENGTH }) : t("learn.dailyA11y", { count: DAILY_QUIZ_LENGTH })}
             >
               <View
                 style={{
@@ -123,12 +126,13 @@ export default function LearnScreen() {
                   color={daily?.dailyQuizDone ? colors.accentSecondary : colors.accent}
                 />
                 <Text style={[type.bodySmall, { color: colors.textPrimary, marginTop: 6, textAlign: "center" }]}>
-                  Daily #{daily ? dailyNumber(daily.date) : ""}
+                  {daily ? t("quiz.dailyTitle", { number: dailyNumber(daily.date) }) : t("learn.daily")}
                 </Text>
-                <Text style={[type.label, { color: colors.textMuted, marginTop: 2, fontSize: 9 }]}>
-                  {daily?.dailyQuizAnswers
-                    ? `DONE · ${daily.dailyQuizAnswers.filter((a) => a.correct).length}/${daily.dailyQuizAnswers.length}`
-                    : `${DAILY_QUIZ_LENGTH} QUESTIONS`}
+                <Text maxFontSizeMultiplier={DENSE_TEXT_MAX_SCALE} style={[type.label, { color: colors.textMuted, marginTop: 2, fontSize: 9 }]}>
+                  {(daily?.dailyQuizAnswers
+                    ? t("learn.dailyDone", { score: daily.dailyQuizAnswers.filter((a) => a.correct).length, total: daily.dailyQuizAnswers.length })
+                    : t("learn.questions", { count: DAILY_QUIZ_LENGTH })
+                  ).toUpperCase()}
                 </Text>
               </View>
             </Pressable>
@@ -137,7 +141,9 @@ export default function LearnScreen() {
               style={{ flex: 1 }}
               onPress={() => router.push("/speed-round")}
               accessibilityRole="button"
-              accessibilityLabel={`Speed round, 60 seconds${daily?.speedRoundBestScore != null ? `, today's best ${daily.speedRoundBestScore}` : ""}`}
+              accessibilityLabel={
+                daily?.speedRoundBestScore != null ? t("learn.speedBestA11y", { score: daily.speedRoundBestScore }) : t("learn.speedA11y")
+              }
             >
               <View
                 style={{
@@ -150,15 +156,15 @@ export default function LearnScreen() {
                 }}
               >
                 <Ionicons name="flash-outline" size={22} color={colors.ember} />
-                <Text style={[type.bodySmall, { color: colors.textPrimary, marginTop: 6, textAlign: "center" }]}>Speed Round</Text>
-                <Text style={[type.label, { color: colors.textMuted, marginTop: 2, fontSize: 9 }]}>
-                  {daily?.speedRoundBestScore != null ? `TODAY'S BEST: ${daily.speedRoundBestScore}` : "60 SECONDS"}
+                <Text style={[type.bodySmall, { color: colors.textPrimary, marginTop: 6, textAlign: "center" }]}>{t("learn.speedRound")}</Text>
+                <Text maxFontSizeMultiplier={DENSE_TEXT_MAX_SCALE} style={[type.label, { color: colors.textMuted, marginTop: 2, fontSize: 9 }]}>
+                  {(daily?.speedRoundBestScore != null ? t("learn.todaysBest", { score: daily.speedRoundBestScore }) : t("learn.sixtySeconds")).toUpperCase()}
                 </Text>
               </View>
             </Pressable>
           </View>
 
-          <AnimatedPressable onPress={() => router.push("/expeditions")} accessibilityLabel="Expeditions: curated journeys through the world">
+          <AnimatedPressable onPress={() => router.push("/expeditions")} accessibilityLabel={`${t("learn.expeditions")}: ${t("learn.expeditionsBody")}`}>
             <View
               style={{
                 flexDirection: "row",
@@ -173,8 +179,8 @@ export default function LearnScreen() {
             >
               <Ionicons name="map-outline" size={22} color={colors.accent} style={{ marginRight: space.md }} />
               <View style={{ flex: 1 }}>
-                <Text style={[type.body, { color: colors.textPrimary, fontFamily: fontFamily.bodySemiBold }]}>Expeditions</Text>
-                <Text style={[type.bodySmall, { color: colors.textMuted, marginTop: 2 }]}>Curated journeys through the world</Text>
+                <Text style={[type.body, { color: colors.textPrimary, fontFamily: fontFamily.bodySemiBold }]}>{t("learn.expeditions")}</Text>
+                <Text style={[type.bodySmall, { color: colors.textMuted, marginTop: 2 }]}>{t("learn.expeditionsBody")}</Text>
               </View>
               <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
             </View>
@@ -182,7 +188,7 @@ export default function LearnScreen() {
 
           <AnimatedPressable
             onPress={() => router.push("/quiz/mixed")}
-            accessibilityLabel={`Mixed review${totalDue > 0 ? `, ${totalDue} due for review` : ""}`}
+            accessibilityLabel={totalDue > 0 ? `${t("quiz.mixedTitle")}, ${t("learn.dueForReview", { count: totalDue })}` : t("quiz.mixedTitle")}
           >
             <View
               style={{
@@ -195,9 +201,9 @@ export default function LearnScreen() {
               }}
             >
               <View style={{ flex: 1 }}>
-                <Text style={[type.title, { color: colors.background, fontSize: 22 }]}>Mixed Review</Text>
+                <Text style={[type.title, { color: colors.background, fontSize: 22 }]}>{t("quiz.mixedTitle")}</Text>
                 <Text style={[type.bodySmall, { color: colors.background, opacity: 0.8, marginTop: 2 }]}>
-                  {totalDue > 0 ? `${totalDue} due for review` : "A bit of everything"}
+                  {totalDue > 0 ? t("learn.dueForReview", { count: totalDue }) : t("learn.bitOfEverything")}
                 </Text>
               </View>
               <Ionicons name="shuffle" size={28} color={colors.background} />
@@ -229,19 +235,19 @@ export default function LearnScreen() {
                 <Ionicons name="earth" size={24} color={colors.accentSecondary} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[type.body, { color: colors.textPrimary, fontFamily: fontFamily.bodySemiBold }]}>Find it on the globe</Text>
-                <Text style={[type.bodySmall, { color: colors.textMuted, marginTop: 2 }]}>No multiple choice — tap where each country is</Text>
+                <Text style={[type.body, { color: colors.textPrimary, fontFamily: fontFamily.bodySemiBold }]}>{t("locate.header")}</Text>
+                <Text style={[type.bodySmall, { color: colors.textMuted, marginTop: 2 }]}>{t("learn.findBody")}</Text>
               </View>
             </View>
             <View style={{ flexDirection: "row", gap: space.sm, marginTop: space.md }}>
               {[
-                { label: "10 rounds", icon: "flag-outline" as const, href: "/quiz/locate" as const, hint: "Ten countries, then your score" },
-                { label: "Endless", icon: "infinite" as const, href: "/find-endless" as const, hint: "Keep going as long as you like; your best streak is saved" },
+                { label: t("learn.tenRounds"), icon: "flag-outline" as const, href: "/quiz/locate" as const, hint: t("learn.tenRoundsHint") },
+                { label: t("learn.endless"), icon: "infinite" as const, href: "/find-endless" as const, hint: t("learn.endlessHint") },
               ].map((mode) => (
                 <AnimatedPressable
-                  key={mode.label}
+                  key={mode.href}
                   onPress={() => router.push(mode.href)}
-                  accessibilityLabel={`Find it on the globe, ${mode.label}`}
+                  accessibilityLabel={`${t("locate.header")}, ${mode.label}`}
                   accessibilityHint={mode.hint}
                   containerStyle={{ flex: 1 }}
                   style={{
@@ -259,16 +265,50 @@ export default function LearnScreen() {
                 </AnimatedPressable>
               ))}
             </View>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginTop: space.md,
+                paddingTop: space.sm,
+                borderTopWidth: 1,
+                borderTopColor: colors.border,
+              }}
+            >
+              <Pressable
+                onPress={() => router.push("/challenge/new")}
+                accessibilityRole="button"
+                accessibilityHint={t("learn.challengeHint")}
+                hitSlop={8}
+                style={{ flexDirection: "row", alignItems: "center", gap: 6, flex: 1, paddingVertical: 6 }}
+              >
+                <Ionicons name="people-outline" size={18} color={colors.accentSecondary} />
+                <Text style={[type.bodySmall, { color: colors.textPrimary, fontFamily: fontFamily.bodySemiBold }]}>{t("challenge.cardAction")}</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => router.push("/challenge/enter")}
+                accessibilityRole="button"
+                hitSlop={8}
+                style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 6 }}
+              >
+                <Ionicons name="keypad-outline" size={16} color={colors.textMuted} />
+                <Text style={[type.bodySmall, { color: colors.textMuted }]}>{t("challenge.enterCode")}</Text>
+              </Pressable>
+            </View>
           </View>
 
-          <Text style={[type.section, { color: colors.textMuted, marginBottom: space.sm }]}>MODES</Text>
+          <Text maxFontSizeMultiplier={DENSE_TEXT_MAX_SCALE} style={[type.section, { color: colors.textMuted, marginBottom: space.sm }]}>{t("learn.modes").toUpperCase()}</Text>
           <View style={{ gap: space.sm }}>
             {QUIZ_CATEGORIES.map((cat) => (
               <Pressable
                 key={cat.key}
                 onPress={() => router.push(`/quiz/${cat.key}`)}
                 accessibilityRole="button"
-                accessibilityLabel={`${cat.label}${dueByCategory.has(cat.key) ? `, ${dueByCategory.get(cat.key)} due` : ""}`}
+                accessibilityLabel={
+                  dueByCategory.has(cat.key)
+                    ? `${t(`category.${cat.key}`)}, ${t("learn.due", { count: dueByCategory.get(cat.key) ?? 0 })}`
+                    : t(`category.${cat.key}`)
+                }
               >
                 <View
                   style={{
@@ -294,7 +334,7 @@ export default function LearnScreen() {
                   >
                     <Ionicons name={cat.icon as any} size={19} color={colors.accent} />
                   </View>
-                  <Text style={[type.body, { color: colors.textPrimary, flex: 1 }]}>{cat.label}</Text>
+                  <Text style={[type.body, { color: colors.textPrimary, flex: 1 }]}>{t(`category.${cat.key}`)}</Text>
                   {dueByCategory.has(cat.key) && (
                     <View
                       style={{
@@ -305,7 +345,9 @@ export default function LearnScreen() {
                         marginRight: space.sm,
                       }}
                     >
-                      <Text style={[type.label, { color: "#fff", fontSize: 10, letterSpacing: 0.4 }]}>{dueByCategory.get(cat.key)} DUE</Text>
+                      <Text maxFontSizeMultiplier={DENSE_TEXT_MAX_SCALE} style={[type.label, { color: "#fff", fontSize: 10, letterSpacing: 0.4 }]}>
+                        {t("learn.due", { count: dueByCategory.get(cat.key) ?? 0 }).toUpperCase()}
+                      </Text>
                     </View>
                   )}
                   <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
@@ -315,7 +357,7 @@ export default function LearnScreen() {
           </View>
 
           <Text style={[type.bodySmall, { color: colors.textMuted, marginTop: space.lg, textAlign: "center" }]}>
-            Full stats and achievements live in the Profile tab.
+            {t("learn.profileNote")}
           </Text>
         </ScrollView>
       </SafeAreaView>
@@ -340,7 +382,7 @@ function StatPill({ label, value }: { label: string; value: string }) {
       }}
     >
       <Text style={[type.data, { color: colors.accent, fontSize: 18 }]}>{value}</Text>
-      <Text style={[type.label, { color: colors.textMuted, marginTop: 2 }]}>{label.toUpperCase()}</Text>
+      <Text maxFontSizeMultiplier={DENSE_TEXT_MAX_SCALE} style={[type.label, { color: colors.textMuted, marginTop: 2 }]}>{label.toUpperCase()}</Text>
     </View>
   );
 }
