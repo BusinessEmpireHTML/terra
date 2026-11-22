@@ -11,12 +11,12 @@ import {
   type ViewProps,
   type ViewStyle,
 } from "react-native";
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
+import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSpring } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { tapFeedback } from "../../utils/haptics";
 import { useTheme } from "../../theme/ThemeProvider";
-import { fontFamily } from "../../theme/tokens";
+import { fontFamily, DENSE_TEXT_MAX_SCALE } from "../../theme/tokens";
 
 /** Full-bleed background gradient: ink navy in dark mode, warm vellum in light mode. */
 export function GradientBackground({ children }: { children: React.ReactNode }) {
@@ -82,6 +82,7 @@ export function AnimatedPressable({
   ...rest
 }: AnimatedPressableProps) {
   const scale = useSharedValue(1);
+  const reduceMotion = useReducedMotion();
   const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
   return (
@@ -89,10 +90,10 @@ export function AnimatedPressable({
       style={containerStyle}
       accessibilityRole={accessibilityRole}
       onPressIn={() => {
-        scale.value = withSpring(0.96, { damping: 14, stiffness: 300 });
+        if (!reduceMotion) scale.value = withSpring(0.96, { damping: 14, stiffness: 300 });
       }}
       onPressOut={() => {
-        scale.value = withSpring(1, { damping: 10, stiffness: 200 });
+        if (!reduceMotion) scale.value = withSpring(1, { damping: 10, stiffness: 200 });
       }}
       onPress={(e) => {
         if (haptic) tapFeedback();
@@ -132,7 +133,7 @@ export function FactRow({ label, value }: { label: string; value: string }) {
   const { colors, type, space } = useTheme();
   return (
     <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", paddingVertical: space.xs }}>
-      <Text style={[type.label, { color: colors.textMuted, textTransform: "uppercase", marginRight: space.md }]}>{label}</Text>
+      <Text maxFontSizeMultiplier={DENSE_TEXT_MAX_SCALE} style={[type.label, { color: colors.textMuted, textTransform: "uppercase", marginRight: space.md }]}>{label}</Text>
       <Text style={[type.data, { color: colors.textPrimary, flexShrink: 1, textAlign: "right" }]} numberOfLines={1}>
         {value}
       </Text>
@@ -165,7 +166,7 @@ export function FactPill({ label, value, note, wide }: { label: string; value: s
         marginBottom: space.sm,
       }}
     >
-      <Text style={[type.label, { color: colors.accent, textTransform: "uppercase" }]}>{label}</Text>
+      <Text maxFontSizeMultiplier={DENSE_TEXT_MAX_SCALE} style={[type.label, { color: colors.accent, textTransform: "uppercase" }]}>{label}</Text>
       <Text style={[type.data, { color: colors.textPrimary, marginTop: 2, fontSize: 16, lineHeight: 21 }]}>{value}</Text>
       {note ? <Text style={[type.bodySmall, { color: colors.textMuted, marginTop: 2, fontSize: 12, lineHeight: 16 }]}>{note}</Text> : null}
     </View>
@@ -178,7 +179,7 @@ export function SectionHeader({ title }: { title: string }) {
   return (
     <View accessibilityRole="header" style={{ flexDirection: "row", alignItems: "center", marginBottom: space.sm, marginTop: space.lg }}>
       <View style={{ width: 18, height: StyleSheet.hairlineWidth * 2, backgroundColor: colors.accent, marginRight: space.sm }} />
-      <Text style={[type.section, { color: colors.accent, textTransform: "uppercase" }]}>{title}</Text>
+      <Text maxFontSizeMultiplier={DENSE_TEXT_MAX_SCALE} style={[type.section, { color: colors.accent, textTransform: "uppercase" }]}>{title}</Text>
     </View>
   );
 }

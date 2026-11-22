@@ -2,6 +2,8 @@ import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../theme/ThemeProvider";
+import { useT } from "../../i18n/useT";
+import { achievementDescription, achievementTitle } from "../../i18n/catalog";
 import type { Achievement } from "../../gamification/types";
 
 interface Props {
@@ -14,13 +16,19 @@ interface Props {
 
 export function AchievementCard({ achievement, unlocked, selected, width, onPress }: Props) {
   const { colors, type, space, radius } = useTheme();
+  const t = useT();
   const tierColor = achievement.tier === "gold" ? colors.accent : achievement.tier === "silver" ? colors.accentSecondary : colors.bronzeTier;
 
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${achievement.title}, ${achievement.tier}, ${unlocked ? "unlocked" : "locked"}. ${achievement.description}`}
+      accessibilityLabel={t("achievement.cardA11y", {
+        title: achievementTitle(achievement, t.lang),
+        tier: t(`tier.${achievement.tier}` as const),
+        state: unlocked ? t("achievement.unlocked") : t("achievement.locked"),
+        description: achievementDescription(achievement, t.lang),
+      })}
       accessibilityState={{ selected }}
       style={{
         width,
@@ -52,7 +60,7 @@ export function AchievementCard({ achievement, unlocked, selected, width, onPres
         />
       </View>
       <Text style={[type.bodySmall, { color: colors.textPrimary, textAlign: "center", fontSize: 11, lineHeight: 14 }]} numberOfLines={2}>
-        {achievement.title}
+        {achievementTitle(achievement, t.lang)}
       </Text>
     </Pressable>
   );

@@ -1,6 +1,8 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useTheme } from "../../theme/ThemeProvider";
+import { useT } from "../../i18n/useT";
+import type { TranslationKey } from "../../i18n/core";
 import { fontFamily } from "../../theme/tokens";
 import type { Dish, HistoryEvent, Landmark } from "../../types/country";
 
@@ -11,8 +13,22 @@ export function ParagraphBlock({ text }: { text: string }) {
 
 const RELIGION_BAR_COLORS = ["accent", "accentSecondary", "accentBright", "ember"] as const;
 
+/** Pew's group names -> translation keys. */
+const RELIGION_KEYS: Record<string, TranslationKey> = {
+  Christians: "religion.christians",
+  Muslims: "religion.muslims",
+  Hindus: "religion.hindus",
+  Buddhists: "religion.buddhists",
+  Jews: "religion.jews",
+  "Folk religions": "religion.folk",
+  "Other religions": "religion.other",
+  "Unaffiliated / no religion": "religion.unaffiliated",
+};
+
 export function ReligionBreakdown({ religions }: { religions: { name: string; percent: number }[] }) {
   const { colors, type, space, radius } = useTheme();
+  const t = useT();
+  const label = (name: string) => (RELIGION_KEYS[name] ? t(RELIGION_KEYS[name]) : name);
   const barColors = RELIGION_BAR_COLORS.map((k) => colors[k]);
 
   const shownTotal = religions.reduce((sum, r) => sum + r.percent, 0);
@@ -20,7 +36,7 @@ export function ReligionBreakdown({ religions }: { religions: { name: string; pe
   // Keep the bar an honest 0–100% scale — if the listed groups don't cover
   // the whole population, show what's left as its own neutral segment
   // rather than letting the shown slices silently fill the full width.
-  const segments = remainder > 1.5 ? [...religions, { name: "Other / unspecified", percent: remainder }] : religions;
+  const segments = remainder > 1.5 ? [...religions, { name: t("religion.unspecified"), percent: remainder }] : religions;
 
   return (
     <View>
@@ -55,7 +71,7 @@ export function ReligionBreakdown({ religions }: { religions: { name: string; pe
                 }}
               />
               <Text style={[type.body, { color: i < religions.length ? colors.textPrimary : colors.textMuted }]} numberOfLines={1}>
-                {r.name}
+                {label(r.name)}
               </Text>
             </View>
             <Text style={[type.data, { color: colors.textMuted, fontSize: 13 }]}>{Math.round(r.percent)}%</Text>
@@ -63,7 +79,7 @@ export function ReligionBreakdown({ religions }: { religions: { name: string; pe
         ))}
       </View>
       <Text style={[type.bodySmall, { color: colors.textMuted, marginTop: space.sm, fontStyle: "italic" }]}>
-        Pew Research Center estimate, 2020. Self-reported religious affiliation is approximate by nature.
+        {t("religion.caption")}
       </Text>
     </View>
   );

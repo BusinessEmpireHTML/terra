@@ -55,9 +55,10 @@ describe("achievements", () => {
     weakest: null,
     strongest: null,
     heatmap: [],
+    games: { routesFinished: 0, routesAtPar: 0, mysteriesSolved: 0, mysteriesWithOneClue: 0 },
   };
   const ctx = (over: Partial<Parameters<typeof evaluateAchievements>[0]> = {}) =>
-    evaluateAchievements({ stats: emptyStats, progressRecords: [], masteryByCountry: new Map(), favoritesCount: 0, ...over });
+    evaluateAchievements({ stats: emptyStats, progressRecords: [], masteryByCountry: new Map(), favoritesCount: 0, stampCount: 0, ...over });
   const rec = (category: ProgressRecord["category"], correctCount: number): ProgressRecord => ({
     countryId: "FRA",
     category,

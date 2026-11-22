@@ -1,17 +1,33 @@
 import { create } from "zustand";
 import { storage } from "../services/storage";
+import { isLang, setCurrentLanguage, type Lang } from "../i18n/core";
+import { deviceLanguage } from "../i18n/device";
+import { isGlobeThemeId, type GlobeThemeId } from "../theme/globeThemes";
 
 export type ThemeMode = "light" | "dark" | "system";
 const THEME_MODES: ThemeMode[] = ["light", "dark", "system"];
+export type LanguageMode = Lang | "system";
+
+function applyLanguage(mode: LanguageMode) {
+  setCurrentLanguage(mode === "system" ? deviceLanguage() : mode);
+}
 
 interface AppState {
   hydrated: boolean;
   favorites: Set<string>;
   recents: string[]; // cca3 codes, most recent first
   themeMode: ThemeMode;
+  languageMode: LanguageMode;
+  /** Hour (0–23) of the daily streak reminder, or null when reminders are off. */
+  reminderHour: number | null;
+  /** Globe style (unlocked with passport stamps). */
+  globeTheme: GlobeThemeId;
   toggleFavorite: (cca3: string) => void;
   recordVisit: (cca3: string) => void;
   setThemeMode: (mode: ThemeMode) => void;
+  setLanguageMode: (mode: LanguageMode) => void;
+  setReminderHour: (hour: number | null) => void;
+  setGlobeTheme: (id: GlobeThemeId) => void;
   hydrateFromDisk: () => Promise<void>;
 }
 
@@ -40,6 +56,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   favorites: new Set(),
   recents: [],
   themeMode: "system",
+  languageMode: "system",
+  reminderHour: null,
+  globeTheme: "classic",
 
   toggleFavorite: (cca3) => {
     const next = new Set(get().favorites);
@@ -60,16 +79,44 @@ export const useAppStore = create<AppState>((set, get) => ({
     storage.saveThemeMode(mode).catch(() => {});
   },
 
+  setLanguageMode: (mode) => {
+    applyLanguage(mode);
+    set({ languageMode: mode });
+    storage.saveLanguageMode(mode).catch(() => {});
+  },
+
+  setReminderHour: (hour) => {
+    set({ reminderHour: hour });
+    storage.saveReminderHour(hour).catch(() => {});
+  },
+
+  setGlobeTheme: (id) => {
+    set({ globeTheme: id });
+    storage.saveGlobeTheme(id).catch(() => {});
+  },
+
   hydrateFromDisk: async () => {
     try {
-      const [favorites, recents, themeMode] = await withTimeout(
-        Promise.all([storage.loadFavorites(), storage.loadRecents(), storage.loadThemeMode()]),
+      const [favorites, recents, themeMode, languageMode, reminderHour, globeTheme] = await withTimeout(
+        Promise.all([
+          storage.loadFavorites(),
+          storage.loadRecents(),
+          storage.loadThemeMode(),
+          storage.loadLanguageMode(),
+          storage.loadReminderHour(),
+          storage.loadGlobeTheme(),
+        ]),
         HYDRATE_TIMEOUT_MS
       );
+      const language: LanguageMode = isLang(languageMode) ? languageMode : "system";
+      applyLanguage(language);
       set({
         favorites: new Set(favorites),
         recents,
         themeMode: THEME_MODES.includes(themeMode as ThemeMode) ? (themeMode as ThemeMode) : "system",
+        languageMode: language,
+        reminderHour,
+        globeTheme: isGlobeThemeId(globeTheme) ? globeTheme : "classic",
         hydrated: true,
       });
     } catch {
@@ -77,6 +124,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       // Fall back to empty state rather than leaving `hydrated` false forever
       // — the caller (app/_layout.tsx) gates the splash screen on this, so
       // never resolving would soft-lock the app on a blank screen.
+      applyLanguage("system");
       set({ hydrated: true });
     }
   },

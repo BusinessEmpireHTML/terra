@@ -3,11 +3,12 @@ import { Pressable, Text, View, useWindowDimensions } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { COUNTRIES } from "../../data/countries";
 import { useTheme } from "../../theme/ThemeProvider";
-import { fontFamily } from "../../theme/tokens";
+import { fontFamily, DENSE_TEXT_MAX_SCALE } from "../../theme/tokens";
 import { Globe, type GlobeGuess, type GlobeHighlight, type GlobeHit } from "../globe/Globe";
 import { tapFeedback } from "../../utils/haptics";
 import { compassName, distanceKm, initialBearing, LOCATE_MAX_TRIES, locatePoints, nearestPointOfCountry, pointToward } from "../../quiz/locateHints";
 import type { AnswerMeta, AnswerResult, Question } from "../../quiz/types";
+import { useT } from "../../i18n/useT";
 
 const COUNTRY_BY_ID = new Map(COUNTRIES.map((c) => [c.id, c]));
 /** The label recorded when the player gives up — never a country name, so it always scores as a miss. */
@@ -32,7 +33,6 @@ interface Guess {
   toward: [number, number] | null;
 }
 
-const formatKm = (km: number) => `${km < 10 ? "under 10" : Math.round(km).toLocaleString("en-US")} km`;
 
 /**
  * "Find it on the globe": rotate the globe and tap where the country is.
@@ -43,6 +43,7 @@ const formatKm = (km: number) => `${km < 10 ? "under 10" : Math.round(km).toLoca
  */
 export function LocateCard({ question, answered, onSelect }: Props) {
   const { colors, type, space, radius } = useTheme();
+  const t = useT();
   const { width, height } = useWindowDimensions();
   const size = Math.min(width - space.lg * 2, height * 0.46, 460);
   // The globe's view spans the full screen width (taller than the globe too),
@@ -77,7 +78,7 @@ export function LocateCard({ question, answered, onSelect }: Props) {
       tapFeedback();
 
       if (hit.countryId === target.id || hit.nearbyIds.includes(target.id)) {
-        finish(target.name.common, tries.length + 1);
+        finish(t.country(target), tries.length + 1);
         return;
       }
       // Tapping a country (or a patch of ocean) you already tried doesn't cost another try.
@@ -86,8 +87,8 @@ export function LocateCard({ question, answered, onSelect }: Props) {
         hit.countryId ? g.tappedId === hit.countryId : g.tappedId === null && distanceKm(g.at, lonLat) < REPEAT_OCEAN_KM
       );
       if (repeat) {
-        const where = hit.countryId ? COUNTRY_BY_ID.get(hit.countryId)?.name.common ?? "there" : "that spot";
-        setNote(`You already tried ${where} — try somewhere else.`);
+        const tried = hit.countryId ? COUNTRY_BY_ID.get(hit.countryId) : undefined;
+        setNote(t("locate.alreadyTried", { where: tried ? t.country(tried) : t("locate.thatSpot") }));
         return;
       }
 
@@ -104,11 +105,11 @@ export function LocateCard({ question, answered, onSelect }: Props) {
       setGuesses(next);
       setNote(null);
       if (next.length >= LOCATE_MAX_TRIES) {
-        const tapped = hit.countryId ? COUNTRY_BY_ID.get(hit.countryId)?.name.common : undefined;
-        finish(tapped ?? OCEAN_LABEL, next.length);
+        const tapped = hit.countryId ? COUNTRY_BY_ID.get(hit.countryId) : undefined;
+        finish(tapped ? t.country(tapped) : OCEAN_LABEL, next.length);
       }
     },
-    [answered, target, finish]
+    [answered, target, finish, t]
   );
 
   const skip = useCallback(() => {
@@ -131,19 +132,28 @@ export function LocateCard({ question, answered, onSelect }: Props) {
 
   const triesLeft = LOCATE_MAX_TRIES - guesses.length;
   const last = guesses[guesses.length - 1];
-  const lastName = last ? (last.tappedId ? COUNTRY_BY_ID.get(last.tappedId)?.name.common : "open ocean") : null;
+  const lastCountry = last?.tappedId ? COUNTRY_BY_ID.get(last.tappedId) : undefined;
+  const lastName = last ? (lastCountry ? t.country(lastCountry) : t("locate.openOcean")) : null;
+  const direction = last ? t(`compass.${compassName(last.bearing)}` as const) : "";
+  const distance = last ? (last.km < 10 ? t("locate.under10km") : t("locate.km", { km: Math.round(last.km) })) : "";
   const points = answered?.points ?? locatePoints(Boolean(answered?.correct), answered?.attempts ?? guesses.length);
 
   return (
     <View style={{ flex: 1 }}>
       <View style={{ alignItems: "center", marginBottom: space.xs, paddingHorizontal: space.lg }}>
-        <Text style={[type.label, { color: colors.textMuted }]}>FIND IT ON THE GLOBE</Text>
+        <Text maxFontSizeMultiplier={DENSE_TEXT_MAX_SCALE} style={[type.label, { color: colors.textMuted }]}>
+          {t("locate.header").toUpperCase()}
+        </Text>
         <Text accessibilityRole="header" style={[type.title, { color: colors.textPrimary, textAlign: "center", marginTop: 4 }]}>
-          {target.name.common}
+          {t.country(target)}
         </Text>
         <View
           accessible
-          accessibilityLabel={answered ? `${points} points` : `${triesLeft} of ${LOCATE_MAX_TRIES} tries left, worth ${locatePoints(true, guesses.length + 1)} points`}
+          accessibilityLabel={
+            answered
+              ? t("locate.pointsA11y", { points })
+              : t("locate.triesA11y", { left: triesLeft, max: LOCATE_MAX_TRIES, points: locatePoints(true, guesses.length + 1) })
+          }
           style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 6 }}
         >
           {Array.from({ length: LOCATE_MAX_TRIES }, (_, i) => {
@@ -163,8 +173,11 @@ export function LocateCard({ question, answered, onSelect }: Props) {
               />
             );
           })}
-          <Text style={[type.label, { color: colors.textMuted, marginLeft: 4 }]}>
-            {answered ? `+${points} ${points === 1 ? "POINT" : "POINTS"}` : `WORTH ${locatePoints(true, guesses.length + 1)}`}
+          <Text maxFontSizeMultiplier={DENSE_TEXT_MAX_SCALE} style={[type.label, { color: colors.textMuted, marginLeft: 4 }]}>
+            {(answered
+              ? t(points === 1 ? "locate.plusPoint" : "locate.plusPoints", { points })
+              : t("locate.worth", { points: locatePoints(true, guesses.length + 1) })
+            ).toUpperCase()}
           </Text>
         </View>
       </View>
@@ -197,7 +210,7 @@ export function LocateCard({ question, answered, onSelect }: Props) {
         >
           <View
             accessible
-            accessibilityLabel={`Direction: ${compassName(last.bearing)}`}
+            accessibilityLabel={t("locate.directionA11y", { direction })}
             style={{
               width: 44,
               height: 44,
@@ -211,14 +224,14 @@ export function LocateCard({ question, answered, onSelect }: Props) {
           >
             {/* A compass arrow (north is up); the arrow on the globe shows the same route in place. */}
             <Ionicons name="arrow-up" size={24} color={colors.accentBright} style={{ transform: [{ rotate: `${last.bearing}deg` }] }} />
-            <Text style={[type.label, { color: colors.textMuted, fontSize: 7, position: "absolute", top: 1 }]}>N</Text>
+            <Text maxFontSizeMultiplier={DENSE_TEXT_MAX_SCALE} style={[type.label, { color: colors.textMuted, fontSize: 7, position: "absolute", top: 1 }]}>N</Text>
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[type.label, { color: colors.ember, marginBottom: 2 }]}>
-              NOT QUITE · {triesLeft} {triesLeft === 1 ? "TRY" : "TRIES"} LEFT
+            <Text maxFontSizeMultiplier={DENSE_TEXT_MAX_SCALE} style={[type.label, { color: colors.ember, marginBottom: 2 }]}>
+              {t(triesLeft === 1 ? "locate.notQuiteTry" : "locate.notQuiteTries", { left: triesLeft }).toUpperCase()}
             </Text>
             <Text style={[type.body, { color: colors.textPrimary }]}>
-              That's {lastName}. {target.name.common} is {formatKm(last.km)} away to the {compassName(last.bearing)}.
+              {t("locate.missHint", { place: lastName ?? "", country: t.country(target), distance, direction })}
             </Text>
           </View>
         </View>
@@ -232,11 +245,11 @@ export function LocateCard({ question, answered, onSelect }: Props) {
         <Pressable
           onPress={skip}
           accessibilityRole="button"
-          accessibilityLabel={`Show me where ${target.name.common} is`}
+          accessibilityLabel={t("locate.showMeA11y", { country: t.country(target) })}
           hitSlop={8}
           style={{ alignSelf: "center", marginTop: space.sm, paddingVertical: space.xs, paddingHorizontal: space.md }}
         >
-          <Text style={[type.bodySmall, { color: colors.textMuted, textDecorationLine: "underline" }]}>I don't know — show me</Text>
+          <Text style={[type.bodySmall, { color: colors.textMuted, textDecorationLine: "underline" }]}>{t("locate.showMe")}</Text>
         </Pressable>
       )}
 
@@ -253,12 +266,17 @@ export function LocateCard({ question, answered, onSelect }: Props) {
             borderLeftColor: answered.correct ? colors.accentSecondary : colors.ember,
           }}
         >
-          <Text style={[type.label, { color: answered.correct ? colors.accentSecondary : colors.ember, marginBottom: 4, fontFamily: fontFamily.mono }]}>
-            {answered.correct
-              ? `FOUND IT${(answered.attempts ?? 1) === 1 ? " FIRST TRY" : ` ON TRY ${answered.attempts}`} · +${points}`
-              : `${answered.chosenLabel === SKIPPED_LABEL ? "SHOWN" : "OUT OF TRIES"} · 0 POINTS`}
+          <Text maxFontSizeMultiplier={DENSE_TEXT_MAX_SCALE} style={[type.label, { color: answered.correct ? colors.accentSecondary : colors.ember, marginBottom: 4, fontFamily: fontFamily.mono }]}>
+            {(answered.correct
+              ? (answered.attempts ?? 1) === 1
+                ? t("locate.foundFirst", { points })
+                : t("locate.foundOnTry", { attempt: answered.attempts ?? 1, points })
+              : answered.chosenLabel === SKIPPED_LABEL
+                ? t("locate.shown")
+                : t("locate.outOfTries")
+            ).toUpperCase()}
           </Text>
-          {!answered.correct && <Text style={[type.body, { color: colors.textPrimary, marginBottom: 4 }]}>Here it is.</Text>}
+          {!answered.correct && <Text style={[type.body, { color: colors.textPrimary, marginBottom: 4 }]}>{t("locate.hereItIs")}</Text>}
           <Text style={[type.body, { color: colors.textSecondary }]}>{question.explanation}</Text>
         </View>
       )}

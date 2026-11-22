@@ -10,8 +10,11 @@ export const POPULATION_BREAKS = [1_000_000, 10_000_000, 50_000_000, 200_000_000
 /** People per km² buckets used by the density layer (and its legend on the home screen). */
 export const DENSITY_BREAKS = [10, 50, 150, 400] as const;
 
-/** Country fills used by game modes to mark answers. */
-export type GlobeHighlight = "correct" | "wrong";
+/**
+ * Country fills used by game modes: answers in Find it, and in Travel Route
+ * the route so far, the destination, and the countries you can move to next.
+ */
+export type GlobeHighlight = "correct" | "wrong" | "route" | "target" | "option";
 
 /** A wrong guess in Find it: a dot where the player tapped, optionally with an arrow aimed at `toward` (a point a little way along the route to the answer). */
 export interface GlobeGuess {

@@ -2,12 +2,15 @@ import type { Continent } from "../types/country";
 import type { QuizCategory } from "../quiz/types";
 import type { DailyAnswer } from "../quiz/daily";
 
+/** Games that log activity (XP, streaks) without a spaced-repetition record. */
+export type GameKind = "route" | "mystery";
+
 export interface ActivityEvent {
   id?: number;
   date: string; // local YYYY-MM-DD, used for streaks/heatmap grouping
   timestamp: string; // ISO instant
   countryId: string;
-  category: QuizCategory;
+  category: QuizCategory | GameKind;
   correct: boolean;
   xpEarned: number;
 }
@@ -37,6 +40,15 @@ export interface StatsSnapshot {
   weakest: ContinentBreakdown | null;
   strongest: ContinentBreakdown | null;
   heatmap: DayCount[]; // last N days, oldest first
+  games: GameStats;
+}
+
+/** Travel Route and Mystery Country totals (from the activity log). */
+export interface GameStats {
+  routesFinished: number;
+  routesAtPar: number;
+  mysteriesSolved: number;
+  mysteriesWithOneClue: number;
 }
 
 export type AchievementTier = "bronze" | "silver" | "gold";

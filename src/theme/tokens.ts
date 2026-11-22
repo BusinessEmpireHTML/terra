@@ -110,3 +110,10 @@ export const type = {
 
 export const space = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 48 } as const;
 export const radius = { sm: 8, md: 14, lg: 22, pill: 999 } as const;
+
+/**
+ * Text follows the phone's text-size setting. Dense, fixed-width UI (pills,
+ * counters, small caps labels) caps the growth at this multiple so very
+ * large settings enlarge it without breaking the layout; body text is uncapped.
+ */
+export const DENSE_TEXT_MAX_SCALE = 1.35;

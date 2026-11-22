@@ -5,6 +5,9 @@ const RECENTS_KEY = "terra:recents";
 
 const THEME_MODE_KEY = "terra:themeMode";
 const FIND_BEST_STREAK_KEY = "terra:findEndlessBestStreak";
+const LANGUAGE_KEY = "terra:language";
+const REMINDER_HOUR_KEY = "terra:reminderHour";
+const GLOBE_THEME_KEY = "terra:globeTheme";
 
 /** Parses a stored JSON string array, treating anything malformed as empty. */
 function parseStringArray(raw: string | null): string[] {
@@ -46,6 +49,33 @@ export const storage = {
 
   async saveThemeMode(mode: string): Promise<void> {
     await kv.setItemAsync(THEME_MODE_KEY, mode);
+  },
+
+  async loadLanguageMode(): Promise<string | null> {
+    return kv.getItemAsync(LANGUAGE_KEY);
+  },
+
+  async saveLanguageMode(mode: string): Promise<void> {
+    await kv.setItemAsync(LANGUAGE_KEY, mode);
+  },
+
+  /** Reminder hour 0–23, or null when reminders are off. */
+  async loadReminderHour(): Promise<number | null> {
+    const raw = await kv.getItemAsync(REMINDER_HOUR_KEY);
+    const n = raw == null || raw === "" ? NaN : Number(raw);
+    return Number.isInteger(n) && n >= 0 && n <= 23 ? n : null;
+  },
+
+  async saveReminderHour(hour: number | null): Promise<void> {
+    await kv.setItemAsync(REMINDER_HOUR_KEY, hour == null ? "" : String(hour));
+  },
+
+  async loadGlobeTheme(): Promise<string | null> {
+    return kv.getItemAsync(GLOBE_THEME_KEY);
+  },
+
+  async saveGlobeTheme(id: string): Promise<void> {
+    await kv.setItemAsync(GLOBE_THEME_KEY, id);
   },
 
   /** Longest streak ever reached in endless Find it. */

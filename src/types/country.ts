@@ -14,6 +14,8 @@ export interface Country {
     common: string;
     official: string;
   };
+  /** Common name in the other languages Terra speaks (from the source dataset's translations). */
+  names?: Partial<Record<"es" | "fr" | "de" | "pt", string>>;
 
   flagEmoji: string;
   /** Accent color drawn from the flag's most distinctive hue (curated for every country). */

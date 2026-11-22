@@ -4,6 +4,7 @@ import { shuffle, pickRandom, type Rng } from "../utils/random";
 import { normalizeName } from "../utils/text";
 import type { Continent, Country } from "../types/country";
 import { QUIZ_CATEGORIES, type Question, type QuestionChoice, type QuizCategory } from "./types";
+import { countryName as localName, listJoin, subregionName, t } from "../i18n/core";
 
 const byId = new Map(COUNTRIES.map((c) => [c.id, c]));
 
@@ -167,28 +168,24 @@ function nonce(): string {
   return Math.random().toString(36).slice(2, 8);
 }
 
-const countryName = (c: Country) => c.name.common;
-
-function listJoin(items: string[]): string {
-  if (items.length <= 1) return items.join("");
-  if (items.length === 2) return `${items[0]} and ${items[1]}`;
-  return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
-}
+/** Country names in the player's language — used for both prompts and answer choices. */
+const countryName = (c: Country) => localName(c);
 
 // ---- Generators --------------------------------------------------------------
 
 function generateFlag(country: Country, rng: Rng): Question {
   const lookalikes = flagLookalikes.get(country.id);
   const candidates = COUNTRIES.filter((c) => c.id !== country.id && !lookalikes?.has(c.id));
-  const distractors = pickDistractorLabels(candidates, countryName, new Set([country.name.common]), country.region, rng);
+  const name = countryName(country);
+  const distractors = pickDistractorLabels(candidates, countryName, new Set([name]), country.region, rng);
   return {
     id: `flag:${country.id}:${nonce()}`,
     category: "flag",
     countryId: country.id,
-    promptLabel: "Which country does this flag belong to?",
+    promptLabel: t("q.flagPrompt"),
     promptVisual: "flag",
-    choices: choicesFrom(country.name.common, distractors, rng),
-    explanation: `That's the flag of ${country.name.common}.`,
+    choices: choicesFrom(name, distractors, rng),
+    explanation: t("q.flagExplain", { country: name }),
   };
 }
 
@@ -196,14 +193,15 @@ function generateCapital(country: Country, rng: Rng): Question {
   const [capital, ...otherCapitals] = country.capital!;
   const candidates = ELIGIBLE_POOLS.capital.filter((c) => c.id !== country.id);
   const distractors = pickDistractorLabels(candidates, (c) => c.capital![0], new Set(country.capital), country.region, rng);
+  const name = countryName(country);
   const explanation = otherCapitals.length
-    ? `${capital} is the capital of ${country.name.common} (it also counts ${listJoin(otherCapitals)} as ${otherCapitals.length > 1 ? "capitals" : "a capital"}).`
-    : `${capital} is the capital of ${country.name.common}.`;
+    ? t("q.capitalExplainMulti", { capital, country: name, others: listJoin(otherCapitals) })
+    : t("q.capitalExplain", { capital, country: name });
   return {
     id: `capital:${country.id}:${nonce()}`,
     category: "capital",
     countryId: country.id,
-    promptLabel: `What is the capital of ${country.name.common}?`,
+    promptLabel: t("q.capitalPrompt", { country: name }),
     choices: choicesFrom(capital, distractors, rng),
     explanation,
   };
@@ -211,35 +209,41 @@ function generateCapital(country: Country, rng: Rng): Question {
 
 function generateShape(country: Country, rng: Rng): Question {
   const candidates = ELIGIBLE_POOLS.shape.filter((c) => c.id !== country.id);
-  const distractors = pickDistractorLabels(candidates, countryName, new Set([country.name.common]), country.region, rng);
+  const name = countryName(country);
+  const distractors = pickDistractorLabels(candidates, countryName, new Set([name]), country.region, rng);
   return {
     id: `shape:${country.id}:${nonce()}`,
     category: "shape",
     countryId: country.id,
-    promptLabel: "Which country has this outline?",
+    promptLabel: t("q.shapePrompt"),
     promptVisual: "shape",
-    choices: choicesFrom(country.name.common, distractors, rng),
-    explanation: `That's the outline of ${country.name.common}.`,
+    choices: choicesFrom(name, distractors, rng),
+    explanation: t("q.shapeExplain", { country: name }),
   };
 }
 
 /** "Find it on the globe": no choices to pick from — the player taps the globe. */
 function generateLocate(country: Country, rng: Rng): Question {
+  const name = countryName(country);
   const neighbors = knownNeighbors(country).map(countryName);
   // "Australia is in Australia and New Zealand" reads oddly, so use the continent when the subregion repeats the name.
-  const area = country.subregion && !country.subregion.includes(country.name.common) ? country.subregion : country.region;
-  const where = `${country.name.common} is in ${area}`;
+  const area =
+    country.subregion && !country.subregion.includes(country.name.common)
+      ? subregionName(country.subregion)
+      : t(`continent.${country.region}` as const);
   const context = neighbors.length
-    ? `It borders ${listJoin(neighbors.length > 3 ? [...neighbors.slice(0, 3), `${neighbors.length - 3} more`] : neighbors)}.`
-    : "It has no land borders at all.";
+    ? t("q.locateBorders", {
+        list: listJoin(neighbors.length > 3 ? [...neighbors.slice(0, 3), t("q.locateMore", { count: neighbors.length - 3 })] : neighbors),
+      })
+    : t("q.locateIsland");
   return {
     id: `locate:${country.id}:${nonce()}`,
     category: "locate",
     countryId: country.id,
-    promptLabel: `Find ${country.name.common}`,
+    promptLabel: t("q.locatePrompt", { country: name }),
     promptVisual: "globe",
-    choices: [{ label: country.name.common, correct: true }],
-    explanation: `${where}. ${context}`,
+    choices: [{ label: name, correct: true }],
+    explanation: `${t("q.locateWhere", { country: name, area })} ${context}`,
   };
 }
 
@@ -249,14 +253,15 @@ function generateCurrency(country: Country, rng: Rng): Question {
   // can't offer the US dollar as a "wrong" answer.
   const candidates = ELIGIBLE_POOLS.currency.filter((c) => c.id !== country.id);
   const distractors = pickDistractorLabels(candidates, (c) => c.currencies![0].name, new Set([primary, ...others]), country.region, rng);
+  const name = countryName(country);
   const explanation = others.length
-    ? `${country.name.common} uses the ${primary}, alongside the ${listJoin(others)}.`
-    : `${country.name.common} uses the ${primary}.`;
+    ? t("q.currencyExplainMulti", { country: name, currency: primary, others: listJoin(others) })
+    : t("q.currencyExplain", { country: name, currency: primary });
   return {
     id: `currency:${country.id}:${nonce()}`,
     category: "currency",
     countryId: country.id,
-    promptLabel: `What currency does ${country.name.common} use?`,
+    promptLabel: t("q.currencyPrompt", { country: name }),
     choices: choicesFrom(primary, distractors, rng),
     explanation,
   };
@@ -267,14 +272,15 @@ function generateNeighbor(country: Country, rng: Rng): Question {
   const neighbor = pickRandom(neighbors, 1, rng)[0];
   const neighborIds = new Set(neighbors.map((n) => n.id));
   const candidates = COUNTRIES.filter((c) => c.id !== country.id && !neighborIds.has(c.id));
-  const distractors = pickDistractorLabels(candidates, countryName, new Set([neighbor.name.common]), country.region, rng);
+  const neighborName = countryName(neighbor);
+  const distractors = pickDistractorLabels(candidates, countryName, new Set([neighborName]), country.region, rng);
   return {
     id: `neighbor:${country.id}:${nonce()}`,
     category: "neighbor",
     countryId: country.id,
-    promptLabel: `Which of these shares a land border with ${country.name.common}?`,
-    choices: choicesFrom(neighbor.name.common, distractors, rng),
-    explanation: `${neighbor.name.common} borders ${country.name.common}.`,
+    promptLabel: t("q.neighborPrompt", { country: countryName(country) }),
+    choices: choicesFrom(neighborName, distractors, rng),
+    explanation: t("q.neighborExplain", { neighbor: neighborName, country: countryName(country) }),
   };
 }
 
@@ -282,14 +288,15 @@ function generateLandmark(country: Country, rng: Rng): Question {
   const landmark = pickRandom(COUNTRY_CONTENT[country.id]!.landmarks!, 1, rng)[0];
   const owners = landmarkOwners.get(normalizeName(landmark.name)) ?? new Set([country.id]);
   const candidates = COUNTRIES.filter((c) => !owners.has(c.id));
-  const distractors = pickDistractorLabels(candidates, countryName, new Set([country.name.common]), country.region, rng);
+  const name = countryName(country);
+  const distractors = pickDistractorLabels(candidates, countryName, new Set([name]), country.region, rng);
   return {
     id: `landmark:${country.id}:${nonce()}`,
     category: "landmark",
     countryId: country.id,
-    promptLabel: `Which country is home to ${landmark.name}?`,
-    choices: choicesFrom(country.name.common, distractors, rng),
-    explanation: `${landmark.name} is in ${country.name.common}. ${landmark.note}`,
+    promptLabel: t("q.landmarkPrompt", { landmark: landmark.name }),
+    choices: choicesFrom(name, distractors, rng),
+    explanation: t("q.landmarkExplain", { landmark: landmark.name, country: name, note: landmark.note }),
   };
 }
 
@@ -297,14 +304,15 @@ function generateFood(country: Country, rng: Rng): Question {
   const dish = pickRandom(quizzableDishes(country.id), 1, rng)[0];
   const owners = dishOwners.get(normalizeName(dish.name)) ?? new Set([country.id]);
   const candidates = COUNTRIES.filter((c) => !owners.has(c.id));
-  const distractors = pickDistractorLabels(candidates, countryName, new Set([country.name.common]), country.region, rng);
+  const name = countryName(country);
+  const distractors = pickDistractorLabels(candidates, countryName, new Set([name]), country.region, rng);
   return {
     id: `food:${country.id}:${nonce()}`,
     category: "food",
     countryId: country.id,
-    promptLabel: `${dish.name} is a dish from which country?`,
-    choices: choicesFrom(country.name.common, distractors, rng),
-    explanation: `${dish.name} is from ${country.name.common}. ${dish.note}`,
+    promptLabel: t("q.foodPrompt", { dish: dish.name }),
+    choices: choicesFrom(name, distractors, rng),
+    explanation: t("q.foodExplain", { dish: dish.name, country: name, note: dish.note }),
   };
 }
 

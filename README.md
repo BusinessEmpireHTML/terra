@@ -3,7 +3,7 @@
 A geography-learning app you explore instead of memorize: a gesture-driven
 globe, a rich page for every one of the world's 194 countries, and
 spaced-repetition quizzes that make it stick. Fully offline, no accounts, no
-API keys.
+API keys. In English, Spanish, French, German and Portuguese.
 
 Built with Expo (SDK 58), Expo Router, React Native Skia, Reanimated 4,
 Gesture Handler 3 and SQLite. Runs on iOS, Android and the web.
@@ -33,9 +33,31 @@ for the web build (the `postinstall` script); it's git-ignored.
 | `npm test` | Unit tests (Jest via `jest-expo`) |
 | `npm run check` | Typecheck + tests, the same gate CI runs |
 | `npm run data` | Regenerate `src/data/countries.ts` and `worldBorders.json` (see *Data*) |
+| `npm run flags` | Regenerate `src/data/flags.ts` (the bundled SVG flags) |
 
 CI (`.github/workflows/ci.yml`) runs the typecheck, the tests and a web
 export on every push to `main` and on every pull request.
+
+### Web version (GitHub Pages)
+
+Every push to `main` publishes the web app to GitHub Pages
+(`.github/workflows/deploy-web.yml`), at
+`https://<owner>.github.io/<repo>/`, for this repository
+https://businessempirehtml.github.io/terra/. One-time setup: in the repository's
+**Settings → Pages → Build and deployment**, set **Source** to **GitHub
+Actions**.
+
+How it works on a static host:
+- The site lives under `/terra/`, so the workflow builds with
+  `TERRA_BASE_URL=/terra` (read by `app.config.ts`). Local builds leave it
+  unset and serve from `/`.
+- Every country, quiz, expedition and game page is pre-rendered
+  (`generateStaticParams`), so links to them open directly.
+- Pages that can't be pre-rendered, like challenge links
+  (`/challenge/7KQ2X9MB`), get `404.html`, a copy of the app shell that opens
+  the right screen in the browser.
+- Shared links show a preview card (`public/og.jpg`), and phones can add Terra
+  to the home screen (`public/manifest.json`).
 
 ## What's inside
 
@@ -51,7 +73,7 @@ export on every push to `main` and on every pull request.
   **Borders**, **Population** (how many people), **Density** (how crowded,
   explained without assuming anyone knows what a km² looks like) and
   **Mastery**, where countries light up as you learn them.
-- **Country pages** for all 194 countries, with the numbers put in everyday
+- **Country pages** for all 194 countries, with a crisp SVG flag and the numbers put in everyday
   terms ("about the size of Belgium", "more crowded than 93% of countries",
   "#77 of 194"): population (World Bank, 2025), area, density, coordinates, languages, currencies, calling code, internet
   domain, land neighbors you can hop between, religious composition (Pew
@@ -107,17 +129,63 @@ export on every push to `main` and on every pull request.
   🟩🟩🟥🟩🟩
   🗿🤝🚩🏛️🔷
   ```
+- **Challenge a friend**: play 10 Find it countries, then send a code (and a
+  link) so a friend gets the *same* 10 and sees your score to beat. The code
+  packs a random seed and your score into 8 characters (Crockford base32, so
+  it survives being read aloud), so no server is needed. Enter a code from
+  the Learn tab, or open the link.
+- **Travel Route**: get from one country to another by crossing land
+  borders, in as few moves as you can. Five routes a round, from 3 to 6
+  borders long; par is the shortest possible route (breadth-first search over
+  the border graph). Move by tapping a neighbor on the globe or a chip below
+  it. The globe shows your trail, the destination and where you can go next,
+  and after each move it says how far the destination is and which way. 3
+  points at par, 2 within two extra moves, 1 within five.
+- **Mystery Country**: up to eight clues, from vague to specific
+  (continent, population, area, neighbors, region, currency, the capital's
+  first letter, then the flag), and you can guess any time. Fewer clues, more
+  points (6 down to 1). A wrong guess reveals the next clue and says how far
+  away the mystery country is from your guess, and which way. Clues never name
+  the answer: "Albanian lek" becomes "lek", and "Australia and New Zealand"
+  becomes "Australasia". There's a **daily mystery**, the same for everyone,
+  with a spoiler-free result to share, plus unlimited practice:
+
+  ```
+  Terra Mystery #326 🕵️
+  Solved with 3 clues
+  🟥⬜🟩
+  ```
 - **Practice anything**: a single country, a whole expedition, one category,
   or a mixed review.
 
 ### Progress
-- **40 achievements**, each with a real, computable condition
+- **46 achievements**, each with a real, computable condition
   (`src/gamification/achievements.ts`). Tap a badge to see how to earn it.
 - **10 expeditions**: curated journeys like Silk Road, Island Nations and
   Countries of the Equator, each with a fact-checked country list (enforced
   by tests) and its own practice mode.
+- **Passport stamps and globe styles**: finishing an expedition stamps your
+  passport (kept for good, even if mastery fades later). Stamps unlock globe
+  styles in Profile: **Antique map** (1 stamp), **School atlas** (3),
+  **Night lights** (5) and **Aurora** (all 10).
 - **Stats**: XP, daily and longest streaks, a 12-week activity heatmap,
   accuracy, and mastery per continent.
+- **Daily reminder** (iOS and Android): pick a time (or Off) in Profile. Terra
+  schedules local notifications a few days ahead, skips days you've already
+  played, and on the last day a streak can be saved says so ("Keep your
+  5-day streak alive"). Tapping one opens the Learn tab. Nothing leaves the
+  device.
+- **Languages**: English, Spanish, French, German and Portuguese, following
+  the phone's language or picked in Profile. All UI text, quiz questions,
+  country, region and continent names, achievements, expeditions and numbers
+  (decimal commas, "1,5 Mrd.") are translated; search matches country names
+  in the chosen language as well as English. Hand-written country stories,
+  fun facts and language/currency names are still English (the app says so).
+- **Accessibility**: screen-reader labels throughout, text that follows the
+  phone's text-size setting (dense badges and pills cap their scaling so
+  nothing overflows), and **reduced motion**: with the system setting on,
+  the globe jumps instead of flying and stops instead of gliding, and
+  buttons don't bounce.
 - **Appearance**: System, Light or Dark, remembered between launches.
 
 ## Project structure
@@ -132,8 +200,10 @@ src/
   services/              persistence (SQLite on native, *.web.ts localStorage on web)
   data/                  generated country data, border geometry, hand-written content
   theme/                 design tokens and theme provider
+  i18n/                  translations: en.ts is the source of truth, es/fr/de/pt are typed against it
   hooks/, store/, utils/
 scripts/prepare-data.mjs data generator
+scripts/prepare-flags.mjs bundles the SVG flags
 ```
 
 Pure logic (quiz generation, SRS, mastery, streaks, projection math,
@@ -177,6 +247,8 @@ hand-written and never touched by the generator.
 - **Country attributes**: [`world-countries`](https://github.com/mledoze/countries) (ODbL).
 - **Border geometry**: Natural Earth via [`world-atlas`](https://github.com/topojson/world-atlas) (public domain), simplified to 1:110m. 165 of the 194 countries have outlines at this scale; the 29 smallest (Vatican City, Monaco, Tuvalu and others) appear as markers.
 - **Population**: World Bank, *Population, total* (SP.POP.TOTL), via [`datasets/population`](https://github.com/datasets/population) (ODC-PDDL), 2025 figures; Vatican City uses the Holy See's 2024 estimate, since the World Bank doesn't cover it.
+- **Flags**: [`country-flag-icons`](https://gitlab.com/catamphetamine/country-flag-icons) (MIT), bundled as SVG.
+- **Country names in other languages**: the translations shipped with `world-countries` (ODbL).
 - **Religious composition**: Pew Research Center, *The Future of World Religions* (2020 estimates), via [`datasets/world-religion-projections`](https://github.com/datasets/world-religion-projections). **CC BY 4.0: attribution is required** wherever this data ships; the app shows it under every religion chart.
 
 ## Roadmap
@@ -186,18 +258,26 @@ hand-written and never touched by the generator.
 3. ~~Learning engine~~: 7 quiz modes, spaced repetition, mastery.
 4. ~~Gamification~~: achievements, stats, daily challenges, expeditions.
 5. **Polish and reach** (in progress): screen-reader labels, web support,
-   a GPU-rendered globe, FSRS scheduling, Find it, and a shareable Daily are
-   done. Next: dynamic type and reduced motion, then sync, social features,
-   an AI tutor, and a textured 3D globe.
+   a GPU-rendered globe, FSRS scheduling, Find it, a shareable Daily, SVG
+   flags, five languages, reminders, friend challenges, dynamic type and
+   reduced motion, Travel Route, Mystery Country, passport stamps, globe
+   styles and a hosted web version are done. Next: an Android build, a
+   home-screen widget (needs a development build), translated country
+   stories, then sync, an AI tutor, and a textured 3D globe.
 
 ## Known gaps
 
-- **Flags are emoji.** They look great on iOS, Android and macOS, but
-  Windows browsers render them as two letters ("FR"), which breaks the flag
-  quiz there. Bundled SVG flags would fix it.
-- **No Mystery Country, Travel Route or Map Puzzle modes yet.** These are
-  genuinely new interaction patterns, better suited to their own pass.
-- **Expeditions have no unique rewards** beyond completion status.
+- **No home-screen widget yet.** `expo-widgets` supports one on iOS and
+  Android, but it needs a development build (it can't run in Expo Go) and,
+  for iOS, an Apple developer account to sign the widget extension.
+- **Country stories are English-only.** History, culture, food, landmarks,
+  fun facts and language/currency names haven't been translated yet.
+- **Challenges compare two scores**, not a leaderboard: there's no server.
+- **Reminders are native-only**: browsers get no notifications.
+- **No Map Puzzle mode yet** (dragging shapes into place).
+- **Travel Route follows the data's land borders**, which include a few
+  through overseas territories (France borders Brazil via French Guiana, Spain
+  borders Morocco via Ceuta and Melilla). They're real, but can surprise.
 - **Local-only.** No accounts, sync or leaderboards by design so far.
 - **No live or volatile facts** (heads of state, GDP); those need a live
   data source rather than a bundled file.
@@ -207,6 +287,28 @@ hand-written and never touched by the generator.
   compressed) the first time the globe is shown. Native apps don't.
 
 ## Changelog
+
+### New games, rewards and a web address (November 2026)
+
+- **Travel Route** and **Mystery Country** (with a shareable daily mystery),
+  on a new 2×2 games grid on the Learn tab. Both count toward XP and streaks
+  and have their own achievements.
+- **Passport stamps** for completed expeditions, which unlock four new
+  **globe styles**.
+- **Hosted web version** on GitHub Pages, with pre-rendered pages, working
+  challenge links, link previews and Add to Home Screen.
+
+### Players and reach (November 2026)
+
+- **SVG flags** everywhere instead of emoji, so the flag quiz works on
+  Windows browsers too.
+- **Five languages** (English, Spanish, French, German, Portuguese) with a
+  language setting; a test fails if any language misses a key or uses a
+  placeholder the English text doesn't provide.
+- **Daily reminders** with a streak warning on the day it matters.
+- **Challenge a friend** in Find it, via a short code or link.
+- **Reduced motion** and **text-size** support.
+- Expedition descriptions on the Expeditions list no longer cut off.
 
 ### Feedback round (November 2026)
 

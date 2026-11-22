@@ -2,6 +2,8 @@ import { applyAnswer, newProgressRecord } from "./srs";
 import { progressStore } from "../services/progressStore";
 import { activityStore, localDateString } from "../services/activityStore";
 import type { QuizCategory } from "./types";
+import type { GameKind } from "../gamification/types";
+import { XP_PER_GAME_POINT } from "../gamification/gameScoring";
 
 export const XP_CORRECT = 10;
 /** Rewards breadth: the first time you ever try a given (country, category) pair. */
@@ -46,6 +48,31 @@ export function recordAnswer(
   const task = queue.then(() => persist(question.countryId, question.category, correct, options.hard ?? false));
   queue = task.catch((err) => {
     if (__DEV__) console.warn("Failed to save answer:", err);
+  });
+  return task;
+}
+
+
+/**
+ * Logs one finished Travel Route or Mystery Country round for XP and streaks.
+ * These games don't map onto one quiz category, so they skip spaced repetition.
+ */
+export function recordGameResult(game: GameKind, countryId: string, result: { finished: boolean; points: number }): Promise<number> {
+  const xpEarned = result.finished ? Math.max(0, result.points) * XP_PER_GAME_POINT : 0;
+  const task = queue.then(async () => {
+    const now = new Date();
+    await activityStore.log({
+      date: localDateString(now),
+      timestamp: now.toISOString(),
+      countryId,
+      category: game,
+      correct: result.finished,
+      xpEarned,
+    });
+    return xpEarned;
+  });
+  queue = task.catch((err) => {
+    if (__DEV__) console.warn("Failed to save game result:", err);
   });
   return task;
 }

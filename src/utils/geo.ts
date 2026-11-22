@@ -10,6 +10,7 @@
  * (matching its source dataset) — callers are responsible for swapping when
  * they cross that boundary. See Globe.tsx for the one place that happens.
  */
+import { currentLanguage, formatNumber, localeFor, translate, type Lang } from "../i18n/core";
 
 export type Ring = [number, number][]; // [lon, lat][]
 
@@ -202,21 +203,23 @@ export function flagFromCca2(cca2: string): string {
     .replace(/./g, (char) => String.fromCodePoint(127397 + char.charCodeAt(0)));
 }
 
-/** 1_234_567 -> "1.2M", 9_492 -> "9.5K", 0.44 -> "0.44". Keeps one decimal only where it adds information. */
-export function formatCompactNumber(n?: number): string {
+/** 1_234_567 -> "1.2M", 9_492 -> "9.5K", 0.44 -> "0.44" (in the given language). Keeps one decimal only where it adds information. */
+export function formatCompactNumber(n?: number, lang: Lang = currentLanguage()): string {
   if (n == null || !Number.isFinite(n)) return "—";
-  const fmt = (v: number, suffix: string) => `${v >= 100 ? Math.round(v) : Number(v.toFixed(1))}${suffix}`;
-  if (n >= 999_950_000) return fmt(n / 1_000_000_000, "B");
-  if (n >= 999_950) return fmt(n / 1_000_000, "M");
-  if (n >= 1_000) return fmt(n / 1_000, "K");
-  return n >= 100 ? String(Math.round(n)) : String(Number(n.toFixed(2)));
+  const fmt = (v: number, key: "num.thousand" | "num.million" | "num.billion") =>
+    translate(lang, key, { n: v >= 100 ? Math.round(v) : Number(v.toFixed(1)) });
+  if (n >= 999_950_000) return fmt(n / 1_000_000_000, "num.billion");
+  if (n >= 999_950) return fmt(n / 1_000_000, "num.million");
+  if (n >= 1_000) return fmt(n / 1_000, "num.thousand");
+  return formatNumber(n >= 100 ? Math.round(n) : Number(n.toFixed(2)), lang);
 }
 
 /** Decimal degrees -> "48.9°N, 2.4°E" for display. */
-export function formatLatLng(lat: number, lng: number): string {
-  const ns = lat >= 0 ? "N" : "S";
-  const ew = lng >= 0 ? "E" : "W";
-  return `${Math.abs(lat).toFixed(1)}°${ns}, ${Math.abs(lng).toFixed(1)}°${ew}`;
+export function formatLatLng(lat: number, lng: number, lang: Lang = currentLanguage()): string {
+  const deg = (v: number) => Math.abs(v).toLocaleString(localeFor(lang), { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const ns = translate(lang, lat >= 0 ? "geo.north" : "geo.south");
+  const ew = translate(lang, lng >= 0 ? "geo.east" : "geo.west");
+  return `${deg(lat)}°${ns}, ${deg(lng)}°${ew}`;
 }
 
 /**

@@ -3,6 +3,8 @@ import { FlatList, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { searchCountries } from "../../utils/search";
+import { useT } from "../../i18n/useT";
+import { Flag } from "../ui/Flag";
 import { COUNTRIES } from "../../data/countries";
 import { useTheme } from "../../theme/ThemeProvider";
 import { GradientBackground } from "../ui/Primitives";
@@ -15,10 +17,11 @@ interface Props {
 
 export function CountrySearchSheet({ visible, onClose, onSelect }: Props) {
   const { colors, type, space, radius } = useTheme();
+  const t = useT();
   const [query, setQuery] = useState("");
   const insets = useSafeAreaInsets();
 
-  const results = useMemo(() => searchCountries(COUNTRIES, query), [query]);
+  const results = useMemo(() => searchCountries(COUNTRIES, query, t.lang), [query, t.lang]);
 
   const close = () => {
     setQuery("");
@@ -32,9 +35,9 @@ export function CountrySearchSheet({ visible, onClose, onSelect }: Props) {
         <View style={{ flex: 1, paddingTop: Platform.OS === "ios" ? space.lg : insets.top + space.md, paddingHorizontal: space.lg }}>
           <View style={{ flexDirection: "row", alignItems: "center", marginBottom: space.md }}>
             <Text accessibilityRole="header" style={[type.title, { color: colors.textPrimary, flex: 1 }]}>
-              Jump anywhere
+              {t("search.title")}
             </Text>
-            <Pressable onPress={close} hitSlop={12} accessibilityRole="button" accessibilityLabel="Close search">
+            <Pressable onPress={close} hitSlop={12} accessibilityRole="button" accessibilityLabel={t("search.close")}>
               <Ionicons name="close" size={26} color={colors.textSecondary} />
             </Pressable>
           </View>
@@ -55,9 +58,9 @@ export function CountrySearchSheet({ visible, onClose, onSelect }: Props) {
             <TextInput
               value={query}
               onChangeText={setQuery}
-              placeholder="Country or capital…"
+              placeholder={t("search.placeholder")}
               placeholderTextColor={colors.textMuted}
-              accessibilityLabel="Search by country or capital"
+              accessibilityLabel={t("search.a11y")}
               autoCorrect={false}
               autoCapitalize="none"
               returnKeyType="search"
@@ -81,7 +84,7 @@ export function CountrySearchSheet({ visible, onClose, onSelect }: Props) {
             contentContainerStyle={{ paddingBottom: insets.bottom + space.lg }}
             ListEmptyComponent={
               <View style={{ paddingTop: space.xl, alignItems: "center" }}>
-                <Text style={[type.body, { color: colors.textMuted }]}>No country matches "{query}"</Text>
+                <Text style={[type.body, { color: colors.textMuted }]}>{t("search.noMatch", { query })}</Text>
               </View>
             }
             renderItem={({ item }) => (
@@ -91,7 +94,7 @@ export function CountrySearchSheet({ visible, onClose, onSelect }: Props) {
                   onSelect(item.id);
                 }}
                 accessibilityRole="button"
-                accessibilityLabel={item.capital ? `${item.name.common}, capital ${item.capital[0]}` : item.name.common}
+                accessibilityLabel={item.capital ? t("search.itemA11y", { country: t.country(item), capital: item.capital[0] }) : t.country(item)}
                 style={{
                   flexDirection: "row",
                   alignItems: "center",
@@ -100,9 +103,9 @@ export function CountrySearchSheet({ visible, onClose, onSelect }: Props) {
                   borderBottomColor: colors.border,
                 }}
               >
-                <Text style={{ fontSize: 22, marginRight: space.sm }}>{item.flagEmoji}</Text>
+                <Flag cca2={item.cca2} width={30} style={{ marginRight: space.sm }} />
                 <View style={{ flex: 1 }}>
-                  <Text style={[type.body, { color: colors.textPrimary }]}>{item.name.common}</Text>
+                  <Text style={[type.body, { color: colors.textPrimary }]}>{t.country(item)}</Text>
                   {item.capital && (
                     <Text style={[type.bodySmall, { color: colors.textMuted }]}>{item.capital[0]}</Text>
                   )}

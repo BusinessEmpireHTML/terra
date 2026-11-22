@@ -2,7 +2,8 @@ import { COUNTRIES } from "../data/countries";
 import { computeAllMastery } from "../quiz/mastery";
 import { progressStore } from "./progressStore";
 import { activityLog } from "./activityLog";
-import type { ContinentBreakdown, DayCount, StatsSnapshot } from "../gamification/types";
+import type { ActivityEvent, ContinentBreakdown, DayCount, GameStats, StatsSnapshot } from "../gamification/types";
+import { MYSTERY_MAX_POINTS, ROUTE_MAX_POINTS, XP_PER_GAME_POINT } from "../gamification/gameScoring";
 import type { Continent } from "../types/country";
 import { addDays, computeStreaks, localDateString } from "../gamification/streaks";
 
@@ -47,6 +48,7 @@ export async function computeStats(): Promise<StatsSnapshot> {
   const totalCorrect = events.filter((e) => e.correct).length;
   const accuracy = totalAnswered === 0 ? 0 : Math.round((totalCorrect / totalAnswered) * 100);
   const questionsToday = byDate.get(today)?.count ?? 0;
+  const games = gameStats(events);
 
   // --- Continent breakdown, from mastery scores ---
   const masteryByCountry = computeAllMastery(progressRecords);
@@ -86,5 +88,18 @@ export async function computeStats(): Promise<StatsSnapshot> {
     weakest,
     strongest,
     heatmap,
+    games,
+  };
+}
+
+/** Travel Route / Mystery Country totals. Points are recovered from XP (see recordGameResult). */
+export function gameStats(events: Pick<ActivityEvent, "category" | "correct" | "xpEarned">[]): GameStats {
+  const routes = events.filter((e) => e.category === "route" && e.correct);
+  const mysteries = events.filter((e) => e.category === "mystery" && e.correct);
+  return {
+    routesFinished: routes.length,
+    routesAtPar: routes.filter((e) => e.xpEarned >= ROUTE_MAX_POINTS * XP_PER_GAME_POINT).length,
+    mysteriesSolved: mysteries.length,
+    mysteriesWithOneClue: mysteries.filter((e) => e.xpEarned >= MYSTERY_MAX_POINTS * XP_PER_GAME_POINT).length,
   };
 }

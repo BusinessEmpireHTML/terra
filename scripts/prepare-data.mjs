@@ -364,6 +364,17 @@ const FEATURED = {
   VUT: { accentColor: "#D21034", funFact: "Vanuatu is home to Pentecost Island's land diving ritual, widely considered the ancestor of modern bungee jumping." },
 };
 
+// ---- Localized country names (Terra's UI languages) -------------------------
+const NAME_LANGUAGES = { es: "spa", fr: "fra", de: "deu", pt: "por" };
+function localizedNames(c) {
+  const names = {};
+  for (const [lang, key] of Object.entries(NAME_LANGUAGES)) {
+    const name = c.translations?.[key]?.common;
+    if (name && name !== c.name.common) names[lang] = name;
+  }
+  return Object.keys(names).length ? names : undefined;
+}
+
 // ---- Border geometry: ccn3 (numeric) -> cca3, from world-countries --------
 const ccn3ToCca3 = new Map(countries.map((c) => [c.ccn3, c.cca3]));
 
@@ -419,6 +430,7 @@ const terraCountries = sovereign
       cca2: c.cca2,
       ccn3: c.ccn3,
       name: { common: c.name.common, official: c.name.official },
+      names: localizedNames(c),
       flagEmoji: c.flag,
       region: c.region,
       subregion: c.subregion || undefined,
