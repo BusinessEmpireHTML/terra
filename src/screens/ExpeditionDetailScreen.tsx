@@ -18,6 +18,8 @@ import type { Country } from "../types/country";
 
 import type { ExpeditionProgress } from "../gamification/types";
 import { useT } from "../i18n/useT";
+import { localeFor } from "../i18n/core";
+import { checkForNewStamps, loadStamps, type Stamp } from "../gamification/passport";
 import { expeditionDescription, expeditionTitle } from "../i18n/catalog";
 
 const COUNTRY_BY_ID = new Map(COUNTRIES.map((c) => [c.id, c]));
@@ -30,6 +32,7 @@ export default function ExpeditionDetailScreen({ expeditionId }: { expeditionId:
   const expedition = EXPEDITIONS_BY_ID.get(expeditionId);
   const [masteryByCountry, setMasteryByCountry] = useState<Map<string, CountryMastery>>(new Map());
   const [progress, setProgress] = useState<ExpeditionProgress | null>(null);
+  const [stamp, setStamp] = useState<Stamp | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -43,6 +46,11 @@ export default function ExpeditionDetailScreen({ expeditionId }: { expeditionId:
           setMasteryByCountry(mastery);
           setProgress(computeExpeditionProgress(expedition, mastery));
         })
+        .catch(() => {});
+      checkForNewStamps()
+        .catch(() => [])
+        .then(() => loadStamps())
+        .then((list) => !cancelled && setStamp(list.find((s) => s.expeditionId === expedition.id) ?? null))
         .catch(() => {});
       return () => {
         cancelled = true;
@@ -87,6 +95,13 @@ export default function ExpeditionDetailScreen({ expeditionId }: { expeditionId:
                 percent: EXPEDITION_COMPLETION_THRESHOLD,
               })}
             </Text>
+            {stamp ? (
+              <Text style={[type.bodySmall, { color: colors.ember, marginBottom: space.sm }]}>
+                🛂 {t("expeditions.stamped", { date: new Date(stamp.earnedAt).toLocaleDateString(localeFor(t.lang), { month: "short", day: "numeric", year: "numeric" }) })}
+              </Text>
+            ) : (
+              !progress?.isComplete && <Text style={[type.bodySmall, { color: colors.textMuted, marginBottom: space.sm }]}>🛂 {t("expeditions.stampToEarn")}</Text>
+            )}
             <PrimaryButton
               label={progress?.isComplete ? t("expeditions.keepPracticing") : t("expeditions.practice")}
               onPress={() => router.push(`/quiz/mixed?expedition=${expedition.id}`)}
@@ -105,6 +120,7 @@ export default function ExpeditionDetailScreen({ expeditionId }: { expeditionId:
               }}
             >
               <Text style={[type.body, { color: colors.background, fontFamily: fontFamily.bodySemiBold }]}>{t("expeditions.complete")} 🏅</Text>
+
             </View>
           )}
 

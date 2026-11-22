@@ -26,6 +26,8 @@ import { scheduleOnRN } from "react-native-worklets";
 import { COUNTRIES } from "../../data/countries";
 import { useTheme } from "../../theme/ThemeProvider";
 import { useT } from "../../i18n/useT";
+import { useAppStore } from "../../store/useAppStore";
+import { GLOBE_THEME_BY_ID } from "../../theme/globeThemes";
 import { tapFeedback } from "../../utils/haptics";
 import {
   BORDERS,
@@ -41,7 +43,7 @@ import {
   screenToSphere,
   solveAnchorRotation,
 } from "./globeData";
-import { DENSITY_BREAKS, POPULATION_BREAKS, type GlobeProps } from "./globeTypes";
+import { DENSITY_BREAKS, POPULATION_BREAKS, type GlobeHighlight, type GlobeProps } from "./globeTypes";
 
 const COUNTRY_BY_ID = new Map(COUNTRIES.map((c) => [c.id, c]));
 const MIN_ZOOM = 0.7;
@@ -67,6 +69,9 @@ interface FrameStyle {
   accent: number;
   background: number;
   outlineAlpha: number;
+  /** Fill for land without a data/highlight color (0 alpha = none, the classic look). */
+  landColor: number;
+  landAlpha: number;
   groupColors: number[];
   groupAlphas: number[];
   /** Per feature (FEATURE_IDS order): index into groupColors, or -1 for no fill. */
@@ -242,6 +247,7 @@ function drawGlobe(canvas: SkCanvas, lambdaDeg: number, phiDeg: number, zoom: nu
 
   // Countries: one outline path for everything, one fill path per color group.
   const outline = Skia.PathBuilder.Make();
+  const land = Skia.PathBuilder.Make();
   const fills: SkPathBuilder[] = [];
   for (let g = 0; g < s.groupColors.length; g++) fills.push(Skia.PathBuilder.Make());
   for (let r = 0; r < BORDERS.ringStart.length; r++) {
@@ -270,6 +276,12 @@ function drawGlobe(canvas: SkCanvas, lambdaDeg: number, phiDeg: number, zoom: nu
     outline.addPoly(pts, true);
     const g = s.featureGroup[BORDERS.ringFeature[r]];
     if (g >= 0) fills[g].addPoly(pts, true);
+    else if (s.landAlpha > 0) land.addPoly(pts, true);
+  }
+  if (s.landAlpha > 0) {
+    fill.setColor(Skia.Color(s.landColor));
+    fill.setAlphaf(s.landAlpha);
+    canvas.drawPath(land.detach(), fill);
   }
   for (let g = 0; g < fills.length; g++) {
     fill.setColor(Skia.Color(s.groupColors[g]));
@@ -402,6 +414,8 @@ export default function GlobeCanvas({
 }: GlobeProps) {
   const { colors } = useTheme();
   const t = useT();
+  const globeThemeId = useAppStore((s) => s.globeTheme);
+  const globeTheme = globeThemeId === "classic" ? undefined : GLOBE_THEME_BY_ID.get(globeThemeId);
   const radius = size / 2;
   const width = widthProp ?? size;
   const height = heightProp ?? size;
@@ -428,11 +442,17 @@ export default function GlobeCanvas({
   // ---- Colors for this render (recomputed only when data/theme change) ----
   const style = useMemo<FrameStyle>(() => {
     const scale = colors.densityScale.map((c) => hexToArgb(c));
-    const highlightColor = { correct: hexToArgb(colors.accentSecondary), wrong: hexToArgb(colors.ember) };
-    // Groups 0–4: the layer's sequential scale. Groups 5–6: game highlights.
-    const groupColors = [...scale, highlightColor.correct, highlightColor.wrong];
-    const groupAlphas = [0.65, 0.65, 0.65, 0.65, 0.65, 0.8, 0.8];
-    const HIGHLIGHT_GROUP = { correct: 5, wrong: 6 } as const;
+    const highlightColor: Record<GlobeHighlight, number> = {
+      correct: hexToArgb(colors.accentSecondary),
+      wrong: hexToArgb(colors.ember),
+      route: hexToArgb(colors.accent),
+      target: hexToArgb(colors.ember),
+      option: hexToArgb(colors.accentBright),
+    };
+    // Groups 0–4: the layer's sequential scale. Groups 5–9: game highlights.
+    const groupColors = [...scale, highlightColor.correct, highlightColor.wrong, highlightColor.route, highlightColor.target, highlightColor.option];
+    const groupAlphas = [0.65, 0.65, 0.65, 0.65, 0.65, 0.8, 0.8, 0.6, 0.85, 0.3];
+    const HIGHLIGHT_GROUP: Record<GlobeHighlight, number> = { correct: 5, wrong: 6, route: 7, target: 8, option: 9 };
     const bucket = (value: number, breaks: readonly number[]) => {
       const i = breaks.findIndex((limit) => value < limit);
       return i === -1 ? breaks.length : i;
@@ -480,8 +500,12 @@ export default function GlobeCanvas({
       width,
       height,
       radius,
-      ocean: [hexToArgb(colors.globeHighlight), hexToArgb(colors.globeBase), hexToArgb(colors.globeEdge)],
-      accent: hexToArgb(colors.accent),
+      ocean: globeTheme?.ocean
+        ? [hexToArgb(globeTheme.ocean[0]), hexToArgb(globeTheme.ocean[1]), hexToArgb(globeTheme.ocean[2])]
+        : [hexToArgb(colors.globeHighlight), hexToArgb(colors.globeBase), hexToArgb(colors.globeEdge)],
+      accent: hexToArgb(globeTheme?.outline ?? colors.accent),
+      landColor: hexToArgb(globeTheme?.land ?? colors.background),
+      landAlpha: globeTheme?.land ? globeTheme.landAlpha ?? 0.9 : 0,
       background: hexToArgb(colors.background),
       outlineAlpha: layer === "political" ? 0.55 : 0.35,
       groupColors,
@@ -491,7 +515,7 @@ export default function GlobeCanvas({
       markerGroup,
       markerHalo,
     };
-  }, [colors, layer, masteryByCca3, highlights, guesses, focusedCountryId, width, height, radius]);
+  }, [colors, globeTheme, layer, masteryByCca3, highlights, guesses, focusedCountryId, width, height, radius]);
 
   const picture = useDerivedValue(
     () => createPicture((canvas) => drawGlobe(canvas, lambda.value, phi.value, zoom.value, style), { width, height }),

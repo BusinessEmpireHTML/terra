@@ -54,6 +54,8 @@ function Nav() {
         <Stack.Screen name="challenge/[code]" options={{ animation: "slide_from_bottom", gestureEnabled: false }} />
         <Stack.Screen name="challenge/enter" options={{ animation: "slide_from_bottom" }} />
         <Stack.Screen name="speed-round" options={{ animation: "slide_from_bottom", gestureEnabled: false }} />
+        <Stack.Screen name="travel-route" options={{ animation: "slide_from_bottom", gestureEnabled: false }} />
+        <Stack.Screen name="mystery/[mode]" options={{ animation: "slide_from_bottom", gestureEnabled: false }} />
       </Stack>
     </>
   );

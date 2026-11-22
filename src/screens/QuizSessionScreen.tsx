@@ -15,15 +15,16 @@ import { LOCATE_MAX_POINTS } from "../quiz/locateHints";
 import { DailyResultCard } from "../components/quiz/DailyResultCard";
 import { localDateString } from "../gamification/streaks";
 import { dailyStore } from "../services/dailyStore";
-import { checkForNewAchievements } from "../gamification/checkAchievements";
+import { checkForRewards } from "../gamification/checkAchievements";
+import { RewardsCard } from "../components/gamification/RewardsCard";
 import { EXPEDITIONS_BY_ID } from "../gamification/expeditions";
 import { COUNTRIES } from "../data/countries";
 import { useSafeBack } from "../hooks/useSafeBack";
-import type { Achievement } from "../gamification/types";
+import type { Achievement, Expedition } from "../gamification/types";
 import { DENSE_TEXT_MAX_SCALE } from "../theme/tokens";
 import { ChallengeResultCard } from "../components/quiz/ChallengeResultCard";
 import { useT } from "../i18n/useT";
-import { achievementTitle, expeditionTitle } from "../i18n/catalog";
+import { expeditionTitle } from "../i18n/catalog";
 
 interface Props {
   filter: CategoryFilter;
@@ -52,6 +53,7 @@ export default function QuizSessionScreen({ filter, focusCountryId, expeditionId
       challengeSeed: challenge?.seed,
     });
   const [newAchievements, setNewAchievements] = useState<Achievement[]>([]);
+  const [newStamps, setNewStamps] = useState<Expedition[]>([]);
   const wrapUpStarted = useRef(false);
   // Daily answers: undefined while checking storage, null if not yet played today.
   const [dailyAnswers, setDailyAnswers] = useState<DailyAnswer[] | null | undefined>(isDailyChallenge ? undefined : null);
@@ -96,8 +98,11 @@ export default function QuizSessionScreen({ filter, focusCountryId, expeditionId
         // Make sure the final answer has been written before evaluating
         // achievements, or one earned on the last question would be missed.
         await whenAnswersSaved();
-        const unlocked = await checkForNewAchievements();
-        if (!cancelled) setNewAchievements(unlocked);
+        const rewards = await checkForRewards();
+        if (!cancelled) {
+          setNewAchievements(rewards.achievements);
+          setNewStamps(rewards.stamps);
+        }
       } catch (err) {
         if (__DEV__) console.warn("Quiz wrap-up failed:", err);
       }
@@ -235,28 +240,7 @@ export default function QuizSessionScreen({ filter, focusCountryId, expeditionId
                 )}
               </>
             )}
-            {newAchievements.length > 0 && (
-              <View
-                style={{
-                  marginTop: space.lg,
-                  alignItems: "center",
-                  padding: space.md,
-                  borderRadius: radius.md,
-                  borderWidth: 1,
-                  borderColor: colors.accent,
-                  alignSelf: "stretch",
-                }}
-              >
-                <Text maxFontSizeMultiplier={DENSE_TEXT_MAX_SCALE} style={[type.label, { color: colors.accent }]}>
-                  {(newAchievements.length > 1 ? t("quiz.achievementsUnlocked") : t("quiz.achievementUnlocked")).toUpperCase()}
-                </Text>
-                {newAchievements.map((a) => (
-                  <Text key={a.id} style={[type.body, { color: colors.textPrimary, marginTop: 4 }]}>
-                    🏅 {achievementTitle(a, t.lang)}
-                  </Text>
-                ))}
-              </View>
-            )}
+            <RewardsCard achievements={newAchievements} stamps={newStamps} />
             <PrimaryButton label={t("common.done")} onPress={goBack} style={{ marginTop: space.xl, width: "100%" }} />
           </ScrollView>
         )}

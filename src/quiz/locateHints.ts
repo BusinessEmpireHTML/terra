@@ -113,3 +113,11 @@ export function pointToward(from: LonLat, to: LonLat, angleDeg: number): LonLat 
   const v = [wa * a[0] + wb * b[0], wa * a[1] + wb * b[1], wa * a[2] + wb * b[2]];
   return [Math.atan2(v[2], v[0]) / DEG, Math.asin(Math.max(-1, Math.min(1, v[1]))) / DEG];
 }
+
+/** From one country (its centre) to another (its nearest edge): how far, and which way. */
+export function hintBetween(fromId: string, toId: string): { km: number; bearing: number } {
+  const c = byId.get(fromId);
+  const from: LonLat = c ? [c.latlng[1], c.latlng[0]] : [0, 0];
+  const { point, km } = nearestPointOfCountry(toId, from);
+  return { km, bearing: initialBearing(from, point) };
+}

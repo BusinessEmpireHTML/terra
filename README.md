@@ -38,6 +38,27 @@ for the web build (the `postinstall` script); it's git-ignored.
 CI (`.github/workflows/ci.yml`) runs the typecheck, the tests and a web
 export on every push to `main` and on every pull request.
 
+### Web version (GitHub Pages)
+
+Every push to `main` publishes the web app to GitHub Pages
+(`.github/workflows/deploy-web.yml`), at
+`https://<owner>.github.io/<repo>/`, for this repository
+https://businessempirehtml.github.io/terra/. One-time setup: in the repository's
+**Settings → Pages → Build and deployment**, set **Source** to **GitHub
+Actions**.
+
+How it works on a static host:
+- The site lives under `/terra/`, so the workflow builds with
+  `TERRA_BASE_URL=/terra` (read by `app.config.ts`). Local builds leave it
+  unset and serve from `/`.
+- Every country, quiz, expedition and game page is pre-rendered
+  (`generateStaticParams`), so links to them open directly.
+- Pages that can't be pre-rendered, like challenge links
+  (`/challenge/7KQ2X9MB`), get `404.html`, a copy of the app shell that opens
+  the right screen in the browser.
+- Shared links show a preview card (`public/og.jpg`), and phones can add Terra
+  to the home screen (`public/manifest.json`).
+
 ## What's inside
 
 ### Explore
@@ -113,15 +134,40 @@ export on every push to `main` and on every pull request.
   packs a random seed and your score into 8 characters (Crockford base32, so
   it survives being read aloud), so no server is needed. Enter a code from
   the Learn tab, or open the link.
+- **Travel Route**: get from one country to another by crossing land
+  borders, in as few moves as you can. Five routes a round, from 3 to 6
+  borders long; par is the shortest possible route (breadth-first search over
+  the border graph). Move by tapping a neighbor on the globe or a chip below
+  it. The globe shows your trail, the destination and where you can go next,
+  and after each move it says how far the destination is and which way. 3
+  points at par, 2 within two extra moves, 1 within five.
+- **Mystery Country**: up to eight clues, from vague to specific
+  (continent, population, area, neighbors, region, currency, the capital's
+  first letter, then the flag), and you can guess any time. Fewer clues, more
+  points (6 down to 1). A wrong guess reveals the next clue and says how far
+  away the mystery country is from your guess, and which way. Clues never name
+  the answer: "Albanian lek" becomes "lek", and "Australia and New Zealand"
+  becomes "Australasia". There's a **daily mystery**, the same for everyone,
+  with a spoiler-free result to share, plus unlimited practice:
+
+  ```
+  Terra Mystery #326 🕵️
+  Solved with 3 clues
+  🟥⬜🟩
+  ```
 - **Practice anything**: a single country, a whole expedition, one category,
   or a mixed review.
 
 ### Progress
-- **40 achievements**, each with a real, computable condition
+- **46 achievements**, each with a real, computable condition
   (`src/gamification/achievements.ts`). Tap a badge to see how to earn it.
 - **10 expeditions**: curated journeys like Silk Road, Island Nations and
   Countries of the Equator, each with a fact-checked country list (enforced
   by tests) and its own practice mode.
+- **Passport stamps and globe styles**: finishing an expedition stamps your
+  passport (kept for good, even if mastery fades later). Stamps unlock globe
+  styles in Profile: **Antique map** (1 stamp), **School atlas** (3),
+  **Night lights** (5) and **Aurora** (all 10).
 - **Stats**: XP, daily and longest streaks, a 12-week activity heatmap,
   accuracy, and mastery per continent.
 - **Daily reminder** (iOS and Android): pick a time (or Off) in Profile. Terra
@@ -214,9 +260,10 @@ hand-written and never touched by the generator.
 5. **Polish and reach** (in progress): screen-reader labels, web support,
    a GPU-rendered globe, FSRS scheduling, Find it, a shareable Daily, SVG
    flags, five languages, reminders, friend challenges, dynamic type and
-   reduced motion are done. Next: a home-screen widget (needs a development
-   build), translated country stories, then sync, an AI tutor, and a
-   textured 3D globe.
+   reduced motion, Travel Route, Mystery Country, passport stamps, globe
+   styles and a hosted web version are done. Next: an Android build, a
+   home-screen widget (needs a development build), translated country
+   stories, then sync, an AI tutor, and a textured 3D globe.
 
 ## Known gaps
 
@@ -227,9 +274,10 @@ hand-written and never touched by the generator.
   fun facts and language/currency names haven't been translated yet.
 - **Challenges compare two scores**, not a leaderboard: there's no server.
 - **Reminders are native-only**: browsers get no notifications.
-- **No Mystery Country, Travel Route or Map Puzzle modes yet.** These are
-  genuinely new interaction patterns, better suited to their own pass.
-- **Expeditions have no unique rewards** beyond completion status.
+- **No Map Puzzle mode yet** (dragging shapes into place).
+- **Travel Route follows the data's land borders**, which include a few
+  through overseas territories (France borders Brazil via French Guiana, Spain
+  borders Morocco via Ceuta and Melilla). They're real, but can surprise.
 - **Local-only.** No accounts, sync or leaderboards by design so far.
 - **No live or volatile facts** (heads of state, GDP); those need a live
   data source rather than a bundled file.
@@ -239,6 +287,16 @@ hand-written and never touched by the generator.
   compressed) the first time the globe is shown. Native apps don't.
 
 ## Changelog
+
+### New games, rewards and a web address (November 2026)
+
+- **Travel Route** and **Mystery Country** (with a shareable daily mystery),
+  on a new 2×2 games grid on the Learn tab. Both count toward XP and streaks
+  and have their own achievements.
+- **Passport stamps** for completed expeditions, which unlock four new
+  **globe styles**.
+- **Hosted web version** on GitHub Pages, with pre-rendered pages, working
+  challenge links, link previews and Add to Home Screen.
 
 ### Players and reach (November 2026)
 

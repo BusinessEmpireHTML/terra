@@ -9,7 +9,8 @@ import { shareText, type ShareOutcome } from "../../utils/share";
 import { useT } from "../../i18n/useT";
 import { DENSE_TEXT_MAX_SCALE } from "../../theme/tokens";
 
-function untilMidnight(now = new Date()): string {
+/** "5h 12m" until the next local midnight, when the daily puzzles change. */
+export function untilMidnight(now = new Date()): string {
   const midnight = new Date(now);
   midnight.setHours(24, 0, 0, 0);
   const minutes = Math.max(0, Math.ceil((midnight.getTime() - now.getTime()) / 60000));
@@ -18,18 +19,23 @@ function untilMidnight(now = new Date()): string {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
+/** A countdown to the next daily puzzle, refreshed every 30 seconds. */
+export function useMidnightCountdown(): string {
+  const [countdown, setCountdown] = useState(() => untilMidnight());
+  useEffect(() => {
+    const id = setInterval(() => setCountdown(untilMidnight()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+  return countdown;
+}
+
 /** The shareable result of today's Daily Quiz: score, one square per question, and the share button. */
 export function DailyResultCard({ date, answers }: { date: string; answers: DailyAnswer[] }) {
   const { colors, type, space, radius } = useTheme();
   const t = useT();
   const [outcome, setOutcome] = useState<ShareOutcome | null>(null);
-  const [countdown, setCountdown] = useState(() => untilMidnight());
+  const countdown = useMidnightCountdown();
   const score = answers.filter((a) => a.correct).length;
-
-  useEffect(() => {
-    const id = setInterval(() => setCountdown(untilMidnight()), 30_000);
-    return () => clearInterval(id);
-  }, []);
 
   const status =
     outcome === "copied" ? t("challenge.copied") : outcome === "failed" ? t("challenge.shareFailed") : outcome === "shared" ? t("daily.shared") : null;

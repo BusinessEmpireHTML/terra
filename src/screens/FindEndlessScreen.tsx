@@ -7,11 +7,11 @@ import { LocateCard } from "../components/quiz/LocateCard";
 import { useTheme } from "../theme/ThemeProvider";
 import { useEndlessLocate } from "../quiz/useEndlessLocate";
 import { whenAnswersSaved } from "../quiz/answerRecorder";
-import { checkForNewAchievements } from "../gamification/checkAchievements";
+import { checkForRewards } from "../gamification/checkAchievements";
+import { RewardsCard } from "../components/gamification/RewardsCard";
 import { useSafeBack } from "../hooks/useSafeBack";
 import { useT } from "../i18n/useT";
-import { achievementTitle } from "../i18n/catalog";
-import type { Achievement } from "../gamification/types";
+import type { Achievement, Expedition } from "../gamification/types";
 import { DENSE_TEXT_MAX_SCALE } from "../theme/tokens";
 
 /** Endless "Find it on the globe": keep going as long as you like; your best streak is saved. */
@@ -22,14 +22,17 @@ export default function FindEndlessScreen() {
   const game = useEndlessLocate();
   const [ended, setEnded] = useState(false);
   const [newAchievements, setNewAchievements] = useState<Achievement[]>([]);
+  const [newStamps, setNewStamps] = useState<Expedition[]>([]);
 
   useEffect(() => {
     if (!ended) return;
     let cancelled = false;
     whenAnswersSaved()
-      .then(() => checkForNewAchievements())
-      .then((unlocked) => {
-        if (!cancelled) setNewAchievements(unlocked);
+      .then(() => checkForRewards())
+      .then((rewards) => {
+        if (cancelled) return;
+        setNewAchievements(rewards.achievements);
+        setNewStamps(rewards.stamps);
       })
       .catch(() => {});
     return () => {
@@ -59,11 +62,7 @@ export default function FindEndlessScreen() {
           <Text maxFontSizeMultiplier={DENSE_TEXT_MAX_SCALE} style={[type.label, { color: game.isNewBest ? colors.accent : colors.textMuted, marginTop: space.xs }]}>
             {(game.isNewBest ? t("endless.newBest") : t("endless.bestEver", { streak: game.bestEver })).toUpperCase()}
           </Text>
-          {newAchievements.map((a) => (
-            <Text key={a.id} style={[type.body, { color: colors.textPrimary, marginTop: space.sm }]}>
-              🏅 {achievementTitle(a, t.lang)}
-            </Text>
-          ))}
+          <RewardsCard achievements={newAchievements} stamps={newStamps} />
           <PrimaryButton label={t("common.done")} onPress={goBack} style={{ marginTop: space.xl, width: "100%" }} />
         </SafeAreaView>
       </GradientBackground>

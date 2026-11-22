@@ -9,12 +9,12 @@ import { useTheme } from "../theme/ThemeProvider";
 import { useSpeedRound } from "../quiz/useSpeedRound";
 import { whenAnswersSaved } from "../quiz/answerRecorder";
 import { dailyStore } from "../services/dailyStore";
-import { checkForNewAchievements } from "../gamification/checkAchievements";
+import { checkForRewards } from "../gamification/checkAchievements";
+import { RewardsCard } from "../components/gamification/RewardsCard";
 import { COUNTRIES } from "../data/countries";
 import { useSafeBack } from "../hooks/useSafeBack";
 import { useT } from "../i18n/useT";
-import { achievementTitle } from "../i18n/catalog";
-import type { Achievement } from "../gamification/types";
+import type { Achievement, Expedition } from "../gamification/types";
 import { DENSE_TEXT_MAX_SCALE } from "../theme/tokens";
 
 const ROUND_SECONDS = 60;
@@ -25,6 +25,7 @@ export default function SpeedRoundScreen() {
   const goBack = useSafeBack();
   const { timeLeft, question, score, attempted, flash, isOver, answer } = useSpeedRound(ROUND_SECONDS);
   const [newAchievements, setNewAchievements] = useState<Achievement[]>([]);
+  const [newStamps, setNewStamps] = useState<Expedition[]>([]);
   const [previousBest, setPreviousBest] = useState<number | null>(null);
   const wrapUpStarted = useRef(false);
 
@@ -42,7 +43,9 @@ export default function SpeedRoundScreen() {
       try {
         await dailyStore.recordSpeedRoundScore(score);
         await whenAnswersSaved();
-        setNewAchievements(await checkForNewAchievements());
+        const rewards = await checkForRewards();
+        setNewAchievements(rewards.achievements);
+        setNewStamps(rewards.stamps);
       } catch (err) {
         if (__DEV__) console.warn("Speed round wrap-up failed:", err);
       }
@@ -65,16 +68,7 @@ export default function SpeedRoundScreen() {
             {t("speed.resultLine", { attempted, seconds: ROUND_SECONDS })}
           </Text>
           {isNewBest && <Text maxFontSizeMultiplier={DENSE_TEXT_MAX_SCALE} style={[type.label, { color: colors.accent, marginTop: space.sm }]}>{t("speed.newBest").toUpperCase()}</Text>}
-          {newAchievements.length > 0 && (
-            <View style={{ marginTop: space.lg, alignItems: "center" }}>
-              <Text maxFontSizeMultiplier={DENSE_TEXT_MAX_SCALE} style={[type.label, { color: colors.accent }]}>{t("quiz.achievementUnlocked").toUpperCase()}</Text>
-              {newAchievements.map((a) => (
-                <Text key={a.id} style={[type.body, { color: colors.textPrimary, marginTop: 4 }]}>
-                  🏅 {achievementTitle(a, t.lang)}
-                </Text>
-              ))}
-            </View>
-          )}
+          <RewardsCard achievements={newAchievements} stamps={newStamps} />
           <PrimaryButton label={t("common.done")} onPress={goBack} style={{ marginTop: space.xl, width: "100%" }} />
         </SafeAreaView>
       </GradientBackground>

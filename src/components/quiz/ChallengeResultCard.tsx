@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { Text, View } from "react-native";
-import * as Linking from "expo-linking";
 import { useTheme } from "../../theme/ThemeProvider";
 import { DENSE_TEXT_MAX_SCALE } from "../../theme/tokens";
 import { PrimaryButton } from "../ui/Primitives";
 import { useT } from "../../i18n/useT";
 import { CHALLENGE_LENGTH, CHALLENGE_MAX_POINTS, encodeChallenge, formatChallengeCode } from "../../quiz/challenge";
 import { shareText, type ShareOutcome } from "../../utils/share";
+import { shareableUrl } from "../../utils/links";
 
 /** Result of a friend challenge: your score, the head-to-head verdict, and a code to send on. */
 export function ChallengeResultCard({ seed, points, opponentScore }: { seed: number; points: number; opponentScore: number | null }) {
@@ -23,7 +23,7 @@ export function ChallengeResultCard({ seed, points, opponentScore }: { seed: num
       max: CHALLENGE_MAX_POINTS,
       count: CHALLENGE_LENGTH,
       code: formatChallengeCode(code),
-      link: Linking.createURL(`challenge/${code}`),
+      link: shareableUrl(`challenge/${code}`),
     });
     setOutcome(await shareText(message));
   };

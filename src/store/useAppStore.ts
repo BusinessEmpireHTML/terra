@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { storage } from "../services/storage";
 import { isLang, setCurrentLanguage, type Lang } from "../i18n/core";
 import { deviceLanguage } from "../i18n/device";
+import { isGlobeThemeId, type GlobeThemeId } from "../theme/globeThemes";
 
 export type ThemeMode = "light" | "dark" | "system";
 const THEME_MODES: ThemeMode[] = ["light", "dark", "system"];
@@ -19,11 +20,14 @@ interface AppState {
   languageMode: LanguageMode;
   /** Hour (0–23) of the daily streak reminder, or null when reminders are off. */
   reminderHour: number | null;
+  /** Globe style (unlocked with passport stamps). */
+  globeTheme: GlobeThemeId;
   toggleFavorite: (cca3: string) => void;
   recordVisit: (cca3: string) => void;
   setThemeMode: (mode: ThemeMode) => void;
   setLanguageMode: (mode: LanguageMode) => void;
   setReminderHour: (hour: number | null) => void;
+  setGlobeTheme: (id: GlobeThemeId) => void;
   hydrateFromDisk: () => Promise<void>;
 }
 
@@ -54,6 +58,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   themeMode: "system",
   languageMode: "system",
   reminderHour: null,
+  globeTheme: "classic",
 
   toggleFavorite: (cca3) => {
     const next = new Set(get().favorites);
@@ -85,10 +90,22 @@ export const useAppStore = create<AppState>((set, get) => ({
     storage.saveReminderHour(hour).catch(() => {});
   },
 
+  setGlobeTheme: (id) => {
+    set({ globeTheme: id });
+    storage.saveGlobeTheme(id).catch(() => {});
+  },
+
   hydrateFromDisk: async () => {
     try {
-      const [favorites, recents, themeMode, languageMode, reminderHour] = await withTimeout(
-        Promise.all([storage.loadFavorites(), storage.loadRecents(), storage.loadThemeMode(), storage.loadLanguageMode(), storage.loadReminderHour()]),
+      const [favorites, recents, themeMode, languageMode, reminderHour, globeTheme] = await withTimeout(
+        Promise.all([
+          storage.loadFavorites(),
+          storage.loadRecents(),
+          storage.loadThemeMode(),
+          storage.loadLanguageMode(),
+          storage.loadReminderHour(),
+          storage.loadGlobeTheme(),
+        ]),
         HYDRATE_TIMEOUT_MS
       );
       const language: LanguageMode = isLang(languageMode) ? languageMode : "system";
@@ -99,6 +116,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         themeMode: THEME_MODES.includes(themeMode as ThemeMode) ? (themeMode as ThemeMode) : "system",
         languageMode: language,
         reminderHour,
+        globeTheme: isGlobeThemeId(globeTheme) ? globeTheme : "classic",
         hydrated: true,
       });
     } catch {

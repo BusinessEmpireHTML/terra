@@ -7,6 +7,7 @@ const THEME_MODE_KEY = "terra:themeMode";
 const FIND_BEST_STREAK_KEY = "terra:findEndlessBestStreak";
 const LANGUAGE_KEY = "terra:language";
 const REMINDER_HOUR_KEY = "terra:reminderHour";
+const GLOBE_THEME_KEY = "terra:globeTheme";
 
 /** Parses a stored JSON string array, treating anything malformed as empty. */
 function parseStringArray(raw: string | null): string[] {
@@ -67,6 +68,14 @@ export const storage = {
 
   async saveReminderHour(hour: number | null): Promise<void> {
     await kv.setItemAsync(REMINDER_HOUR_KEY, hour == null ? "" : String(hour));
+  },
+
+  async loadGlobeTheme(): Promise<string | null> {
+    return kv.getItemAsync(GLOBE_THEME_KEY);
+  },
+
+  async saveGlobeTheme(id: string): Promise<void> {
+    await kv.setItemAsync(GLOBE_THEME_KEY, id);
   },
 
   /** Longest streak ever reached in endless Find it. */

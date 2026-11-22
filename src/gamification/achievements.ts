@@ -1,4 +1,5 @@
 import { COUNTRIES } from "../data/countries";
+import { EXPEDITIONS } from "./expeditions";
 import { MAX_BOX } from "../quiz/srs";
 import { MASTERED_THRESHOLD } from "../quiz/mastery";
 import type { CountryMastery, ProgressRecord, QuizCategory } from "../quiz/types";
@@ -63,6 +64,14 @@ export const ACHIEVEMENTS: Achievement[] = [
 
   // Capstone
   { id: "geography_legend", title: "Geography Legend", description: "Strong average mastery across every continent", icon: "globe", tier: "gold" },
+
+  // Travel Route, Mystery Country and the passport
+  { id: "route_par", title: "Pathfinder", description: "Finish a Travel Route in par", icon: "trail-sign", tier: "bronze" },
+  { id: "route_25", title: "Overlander", description: "Finish 25 Travel Routes", icon: "car", tier: "silver" },
+  { id: "mystery_solved", title: "Detective", description: "Solve a Mystery Country", icon: "search", tier: "bronze" },
+  { id: "mystery_one_clue", title: "Sherlock", description: "Solve a Mystery Country from the first clue", icon: "eye", tier: "gold" },
+  { id: "passport_1", title: "First Stamp", description: "Complete an expedition to earn a passport stamp", icon: "ribbon", tier: "silver" },
+  { id: "passport_10", title: "Full Passport", description: "Collect all 10 passport stamps", icon: "book", tier: "gold" },
 ];
 
 export const ACHIEVEMENTS_BY_ID = new Map(ACHIEVEMENTS.map((a) => [a.id, a]));
@@ -72,6 +81,8 @@ interface AchievementContext {
   progressRecords: ProgressRecord[];
   masteryByCountry: Map<string, CountryMastery>;
   favoritesCount: number;
+  /** Passport stamps collected (completed expeditions). */
+  stampCount: number;
 }
 
 function boxMasteredCount(records: ProgressRecord[], category: QuizCategory): number {
@@ -96,7 +107,7 @@ const COUNTRIES_WITH_CAPITAL = COUNTRIES.filter((c) => c.capital?.[0]).length;
 
 /** Pure function: given current data, which achievement IDs are satisfied right now. */
 export function evaluateAchievements(ctx: AchievementContext): Set<string> {
-  const { stats, progressRecords, masteryByCountry, favoritesCount } = ctx;
+  const { stats, progressRecords, masteryByCountry, favoritesCount, stampCount } = ctx;
   const unlocked = new Set<string>();
 
   if (progressRecords.some((r) => r.category === "flag" && r.correctCount > 0)) unlocked.add("first_flag");
@@ -154,6 +165,13 @@ export function evaluateAchievements(ctx: AchievementContext): Set<string> {
 
   if (stats.totalXp >= 1000) unlocked.add("xp_1000");
   if (stats.totalXp >= 10000) unlocked.add("xp_10000");
+
+  if (stats.games.routesAtPar >= 1) unlocked.add("route_par");
+  if (stats.games.routesFinished >= 25) unlocked.add("route_25");
+  if (stats.games.mysteriesSolved >= 1) unlocked.add("mystery_solved");
+  if (stats.games.mysteriesWithOneClue >= 1) unlocked.add("mystery_one_clue");
+  if (stampCount >= 1) unlocked.add("passport_1");
+  if (stampCount >= EXPEDITIONS.length) unlocked.add("passport_10");
 
   return unlocked;
 }

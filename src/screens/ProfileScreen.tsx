@@ -14,6 +14,9 @@ import { achievementStore } from "../services/achievementStore";
 import { ACHIEVEMENTS } from "../gamification/achievements";
 import type { StatsSnapshot, UnlockedAchievement } from "../gamification/types";
 import { useT } from "../i18n/useT";
+import { checkForNewStamps, loadStamps, type Stamp } from "../gamification/passport";
+import { EXPEDITIONS } from "../gamification/expeditions";
+import { GlobeStylePicker, PassportStamps } from "../components/gamification/Passport";
 import { achievementDescription, achievementTitle } from "../i18n/catalog";
 import { LANGUAGES, localeFor, type TranslationKey } from "../i18n/core";
 import { useAppStore, type LanguageMode } from "../store/useAppStore";
@@ -38,16 +41,25 @@ export default function ProfileScreen() {
   const [reloadKey, setReloadKey] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [gridWidth, setGridWidth] = useState(0);
+  const [stamps, setStamps] = useState<Stamp[]>([]);
 
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
       setError(false);
-      Promise.all([computeStats(), achievementStore.getUnlocked()])
-        .then(([s, list]) => {
+      Promise.all([
+        computeStats(),
+        achievementStore.getUnlocked(),
+        // Catch up on any expedition completed since the last check, then read the passport.
+        checkForNewStamps()
+          .catch(() => [])
+          .then(() => loadStamps()),
+      ])
+        .then(([s, list, passport]) => {
           if (cancelled) return;
           setStats(s);
           setUnlocked(new Map(list.map((u) => [u.achievementId, u])));
+          setStamps(passport);
         })
         .catch((err) => {
           if (__DEV__) console.warn("Failed to load profile:", err);
@@ -162,6 +174,16 @@ export default function ProfileScreen() {
                   onPress={() => setSelectedId((cur) => (cur === a.id ? null : a.id))}
                 />
               ))}
+          </View>
+
+          <SectionLabel text={t("passport.title", { count: stamps.length, total: EXPEDITIONS.length })} />
+          <Card>
+            <PassportStamps stamps={stamps} />
+          </Card>
+
+          <SectionLabel text={t("globeStyle.title")} />
+          <View style={{ marginBottom: space.lg }}>
+            <GlobeStylePicker stampCount={stamps.length} />
           </View>
 
           <SectionLabel text={t("settings.reminders")} />

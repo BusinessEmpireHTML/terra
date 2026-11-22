@@ -17,6 +17,9 @@ import { QUIZ_CATEGORIES, type QuizCategory } from "../quiz/types";
 import type { ProgressRecord } from "../quiz/types";
 import type { DailyState } from "../gamification/types";
 import { useT } from "../i18n/useT";
+import { mysteryStore } from "../services/mysteryStore";
+import { localDateString } from "../gamification/streaks";
+import type { MysteryState } from "../quiz/mystery";
 
 export default function LearnScreen() {
   const { colors, type, space, radius } = useTheme();
@@ -24,15 +27,17 @@ export default function LearnScreen() {
   const router = useRouter();
   const [records, setRecords] = useState<ProgressRecord[] | null>(null);
   const [daily, setDaily] = useState<DailyState | null>(null);
+  const [mystery, setMystery] = useState<MysteryState | null>(null);
 
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
-      Promise.all([progressStore.getAll(), dailyStore.getToday()])
-        .then(([r, d]) => {
+      Promise.all([progressStore.getAll(), dailyStore.getToday(), mysteryStore.load(localDateString()).catch(() => null)])
+        .then(([r, d, m]) => {
           if (cancelled) return;
           setRecords(r);
           setDaily(d);
+          setMystery(m);
         })
         .catch((err) => {
           // Keep the tab usable (every mode still works) even if stats can't load.
@@ -103,65 +108,53 @@ export default function LearnScreen() {
             </Pressable>
           )}
 
-          <View style={{ flexDirection: "row", gap: space.sm, marginBottom: space.lg }}>
-            <Pressable
-              style={{ flex: 1 }}
-              onPress={() => router.push("/quiz/mixed?daily=1")}
-              accessibilityRole="button"
-              accessibilityLabel={daily?.dailyQuizDone ? t("learn.dailyDoneA11y", { count: DAILY_QUIZ_LENGTH }) : t("learn.dailyA11y", { count: DAILY_QUIZ_LENGTH })}
-            >
-              <View
-                style={{
-                  backgroundColor: colors.surfaceRaised,
-                  borderRadius: radius.md,
-                  borderWidth: 1,
-                  borderColor: daily?.dailyQuizDone ? colors.accentSecondary : colors.border,
-                  padding: space.md,
-                  alignItems: "center",
-                }}
-              >
-                <Ionicons
-                  name={daily?.dailyQuizDone ? "checkmark-circle" : "help-circle-outline"}
-                  size={22}
-                  color={daily?.dailyQuizDone ? colors.accentSecondary : colors.accent}
-                />
-                <Text style={[type.bodySmall, { color: colors.textPrimary, marginTop: 6, textAlign: "center" }]}>
-                  {daily ? t("quiz.dailyTitle", { number: dailyNumber(daily.date) }) : t("learn.daily")}
-                </Text>
-                <Text maxFontSizeMultiplier={DENSE_TEXT_MAX_SCALE} style={[type.label, { color: colors.textMuted, marginTop: 2, fontSize: 9 }]}>
-                  {(daily?.dailyQuizAnswers
-                    ? t("learn.dailyDone", { score: daily.dailyQuizAnswers.filter((a) => a.correct).length, total: daily.dailyQuizAnswers.length })
-                    : t("learn.questions", { count: DAILY_QUIZ_LENGTH })
-                  ).toUpperCase()}
-                </Text>
-              </View>
-            </Pressable>
-
-            <Pressable
-              style={{ flex: 1 }}
-              onPress={() => router.push("/speed-round")}
-              accessibilityRole="button"
-              accessibilityLabel={
-                daily?.speedRoundBestScore != null ? t("learn.speedBestA11y", { score: daily.speedRoundBestScore }) : t("learn.speedA11y")
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm, marginBottom: space.lg }}>
+            <Tile
+              icon={daily?.dailyQuizDone ? "checkmark-circle" : "help-circle-outline"}
+              iconColor={daily?.dailyQuizDone ? colors.accentSecondary : colors.accent}
+              done={Boolean(daily?.dailyQuizDone)}
+              title={daily ? t("quiz.dailyTitle", { number: dailyNumber(daily.date) }) : t("learn.daily")}
+              meta={
+                daily?.dailyQuizAnswers
+                  ? t("learn.dailyDone", { score: daily.dailyQuizAnswers.filter((a) => a.correct).length, total: daily.dailyQuizAnswers.length })
+                  : t("learn.questions", { count: DAILY_QUIZ_LENGTH })
               }
-            >
-              <View
-                style={{
-                  backgroundColor: colors.surfaceRaised,
-                  borderRadius: radius.md,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  padding: space.md,
-                  alignItems: "center",
-                }}
-              >
-                <Ionicons name="flash-outline" size={22} color={colors.ember} />
-                <Text style={[type.bodySmall, { color: colors.textPrimary, marginTop: 6, textAlign: "center" }]}>{t("learn.speedRound")}</Text>
-                <Text maxFontSizeMultiplier={DENSE_TEXT_MAX_SCALE} style={[type.label, { color: colors.textMuted, marginTop: 2, fontSize: 9 }]}>
-                  {(daily?.speedRoundBestScore != null ? t("learn.todaysBest", { score: daily.speedRoundBestScore }) : t("learn.sixtySeconds")).toUpperCase()}
-                </Text>
-              </View>
-            </Pressable>
+              a11yLabel={daily?.dailyQuizDone ? t("learn.dailyDoneA11y", { count: DAILY_QUIZ_LENGTH }) : t("learn.dailyA11y", { count: DAILY_QUIZ_LENGTH })}
+              onPress={() => router.push("/quiz/mixed?daily=1")}
+            />
+            <Tile
+              icon={mystery && mystery.status !== "playing" ? "checkmark-circle" : "search-outline"}
+              iconColor={mystery && mystery.status !== "playing" ? colors.accentSecondary : colors.accentBright}
+              done={Boolean(mystery && mystery.status !== "playing")}
+              title={t("mystery.dailyTitle", { number: dailyNumber(localDateString()) })}
+              meta={
+                mystery?.status === "solved"
+                  ? mystery.cluesShown === 1
+                    ? t("mystery.tileSolvedOne")
+                    : t("mystery.tileSolved", { clues: mystery.cluesShown })
+                  : mystery?.status === "failed"
+                    ? t("mystery.tileFailed")
+                    : t("mystery.tileMeta")
+              }
+              a11yLabel={`${t("mystery.title")}. ${t("mystery.cardBody")}`}
+              onPress={() => router.push("/mystery/daily")}
+            />
+            <Tile
+              icon="flash-outline"
+              iconColor={colors.ember}
+              title={t("learn.speedRound")}
+              meta={daily?.speedRoundBestScore != null ? t("learn.todaysBest", { score: daily.speedRoundBestScore }) : t("learn.sixtySeconds")}
+              a11yLabel={daily?.speedRoundBestScore != null ? t("learn.speedBestA11y", { score: daily.speedRoundBestScore }) : t("learn.speedA11y")}
+              onPress={() => router.push("/speed-round")}
+            />
+            <Tile
+              icon="trail-sign-outline"
+              iconColor={colors.accentSecondary}
+              title={t("route.title")}
+              meta={t("route.cardMeta")}
+              a11yLabel={`${t("route.title")}. ${t("route.cardBody")}`}
+              onPress={() => router.push("/travel-route")}
+            />
           </View>
 
           <AnimatedPressable onPress={() => router.push("/expeditions")} accessibilityLabel={`${t("learn.expeditions")}: ${t("learn.expeditionsBody")}`}>
@@ -362,6 +355,47 @@ export default function LearnScreen() {
         </ScrollView>
       </SafeAreaView>
     </GradientBackground>
+  );
+}
+
+/** One of the four "Today" games: half the width, icon over title over a small caption. */
+function Tile({
+  icon,
+  iconColor,
+  title,
+  meta,
+  a11yLabel,
+  onPress,
+  done,
+}: {
+  icon: React.ComponentProps<typeof Ionicons>["name"];
+  iconColor: string;
+  title: string;
+  meta: string;
+  a11yLabel: string;
+  onPress: () => void;
+  done?: boolean;
+}) {
+  const { colors, type, space, radius } = useTheme();
+  return (
+    <Pressable style={{ flexBasis: "47%", flexGrow: 1 }} onPress={onPress} accessibilityRole="button" accessibilityLabel={a11yLabel}>
+      <View
+        style={{
+          backgroundColor: colors.surfaceRaised,
+          borderRadius: radius.md,
+          borderWidth: 1,
+          borderColor: done ? colors.accentSecondary : colors.border,
+          padding: space.md,
+          alignItems: "center",
+        }}
+      >
+        <Ionicons name={icon} size={22} color={iconColor} />
+        <Text style={[type.bodySmall, { color: colors.textPrimary, marginTop: 6, textAlign: "center" }]}>{title}</Text>
+        <Text maxFontSizeMultiplier={DENSE_TEXT_MAX_SCALE} style={[type.label, { color: colors.textMuted, marginTop: 2, fontSize: 9, textAlign: "center" }]}>
+          {meta.toUpperCase()}
+        </Text>
+      </View>
+    </Pressable>
   );
 }
 
